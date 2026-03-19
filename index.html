@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Eternal Garden</title>
     
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💗</text></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -78,9 +80,9 @@
         }
         .msg-container:hover { background: rgba(243, 206, 94, 0.02); }
         .msg-header { display: flex; align-items: baseline; gap: 5px; margin-bottom: 2px; }
-        .msg-sender { font-size: 12px; font-weight: 600; color: var(--firefly); text-transform: capitalize; }
+        .msg-sender { font-size: 12px; font-weight: 600; text-transform: capitalize; }
         .msg-ts { font-size: 10px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
-        .msg-content { font-size: 14px; line-height: var(--line-h); color: rgba(253, 246, 227, 0.95); word-break: break-word; }
+        .msg-content { font-size: 14px; line-height: var(--line-h); word-break: break-word; }
         
         .sys-msg {
             text-align: center; font-size: 11px; color: var(--text-dim);
@@ -287,9 +289,12 @@
             </nav>
 
             <div class="p-8 border-t border-white/5">
-                <button id="opt-logout" class="w-full py-3 bg-white/5 hover:bg-white/10 text-xs tracking-widest uppercase text-gray-400 hover:text-white transition rounded">
+                <button id="opt-logout" class="w-full py-3 bg-white/5 hover:bg-white/10 text-xs tracking-widest uppercase text-gray-400 hover:text-white transition rounded mb-6">
                     Leave Garden
                 </button>
+                <div class="text-center">
+                    <span class="text-[10px] text-gray-500 tracking-[0.2em] uppercase" style="text-shadow: 0 0 10px rgba(255, 105, 180, 0.3);">Made with 💗 by MAYBORG</span>
+                </div>
             </div>
             
             <input type="file" id="p2p-file-pick" class="hidden" accept="video/mp4,video/webm,video/ogg">
@@ -327,6 +332,24 @@
             input: document.getElementById('msg-input'),
             sendBtn: document.getElementById('msg-send-btn'),
             typingStatus: document.getElementById('typing-status')
+        };
+
+        // ==========================================
+        // 1.5. USER COLOR GENERATOR
+        // ==========================================
+        const getUserColor = (name) => {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            // Synthwave/Neon hues: Cyan, Electric Blue, Purple, Magenta, Pink
+            const hues = [190, 220, 260, 280, 310, 330];
+            const hue = hues[Math.abs(hash) % hues.length];
+            return {
+                name: `hsl(${hue}, 90%, 65%)`,             // Vibrant accent
+                text: `hsl(${hue}, 30%, 90%)`,             // Whitish with a tint of the hue
+                glow: `hsla(${hue}, 90%, 65%, 0.15)`       // Subtle glow for the text
+            };
         };
 
         // ==========================================
@@ -441,10 +464,9 @@
                     }
                 });
 
-                // Messages (Using onChildAdded to fix re-entry bug)
+                // Messages 
                 const msgsRef = query(ref(db, `rooms/${AppState.room}/msgs`), limitToLast(50));
                 
-                // Clear initial placeholder text on first real load
                 let isFirstLoad = true;
                 
                 onChildAdded(msgsRef, async (snap) => {
@@ -484,13 +506,15 @@
                 div.className = 'msg-container';
                 div.id = `msg-${m.id}`;
                 
-                // Group messages visually
                 const isContinuous = AppState.lastMsgSender === m.sender;
                 AppState.lastMsgSender = m.sender;
 
+                // Get Custom User Colors
+                const userTheme = getUserColor(m.sender);
+
                 let html = '';
                 if(!isContinuous) {
-                    html += `<div class="msg-header"><span class="msg-sender">${m.sender}</span><span class="msg-ts">${time}</span></div>`;
+                    html += `<div class="msg-header"><span class="msg-sender" style="color: ${userTheme.name}; text-shadow: 0 0 8px ${userTheme.glow}">${m.sender}</span><span class="msg-ts">${time}</span></div>`;
                 }
 
                 // Format text (Links)
@@ -498,7 +522,9 @@
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
                 formattedText = formattedText.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-yellow-500 underline hover:text-yellow-300">${url}</a>`);
 
-                html += `<div class="msg-content">`;
+                // Apply whitish color with tint based on user
+                html += `<div class="msg-content" style="color: ${userTheme.text}; text-shadow: 0 0 5px ${userTheme.glow}">`;
+                
                 if(m.reply) html += `<div class="reply-banner">@${m.reply}</div><br>`;
                 html += `<span>${formattedText}</span>`;
 
@@ -539,15 +565,12 @@
         // ==========================================
         const MediaEngine = {
             init() {
-                // Listen for global room media sync
                 onValue(ref(db, `rooms/${AppState.room}/mediaSync`), (snap) => {
                     const data = snap.val();
                     if(!data) return this.close();
-                    if(data.sender === AppState.user) return; // Ignore own commands
-                    
+                    if(data.sender === AppState.user) return; 
                     if(data.type === 'yt') this.handleRemoteYTSync(data);
                 });
-
                 this.setupWebRTC();
             },
 
@@ -579,7 +602,7 @@
 
             onYTStateChange(e) {
                 if(!AppState.isHost) return;
-                const state = e.data; // 1 = playing, 2 = paused
+                const state = e.data; 
                 const time = AppState.ytPlayer.getCurrentTime();
                 
                 if(state === 1 || state === 2) {
@@ -610,7 +633,6 @@
                     if(data.state === 1) AppState.ytPlayer.playVideo();
                     if(data.state === 2) AppState.ytPlayer.pauseVideo();
                     
-                    // Sync time if difference is > 2 seconds
                     const currTime = AppState.ytPlayer.getCurrentTime();
                     if(Math.abs(currTime - data.time) > 2) {
                         AppState.ytPlayer.seekTo(data.time, true);
@@ -623,7 +645,7 @@
                 AppState.peer = new Peer(peerId);
                 
                 AppState.peer.on('call', (call) => {
-                    call.answer(); // Auto answer
+                    call.answer(); 
                     call.on('stream', (stream) => {
                         const vid = document.getElementById('p2p-local-vid');
                         document.getElementById('media-layer').style.display = 'flex';
@@ -648,10 +670,8 @@
                 vid.src = url;
                 vid.play();
 
-                // Capture stream and send to peers
                 vid.onplay = () => {
                     const stream = vid.captureStream();
-                    // Fetch presence list to know who to call
                     get(ref(db, `rooms/${AppState.room}/presence`)).then(snap => {
                         snap.forEach(s => {
                             if(s.key !== AppState.user) {
@@ -668,7 +688,6 @@
                 if(AppState.ytPlayer) AppState.ytPlayer.pauseVideo();
                 const localVid = document.getElementById('p2p-local-vid');
                 localVid.pause(); localVid.src = ''; localVid.srcObject = null;
-                // If Host, broadcast close
                 if(AppState.isHost) remove(ref(db, `rooms/${AppState.room}/mediaSync`));
             }
         };
@@ -691,21 +710,17 @@
             }
 
             try {
-                // Initialize State and Key Before moving forward
                 AppState.user = u; AppState.room = r; AppState.pass = p;
                 AppState.cryptoKey = await CryptoSys.deriveKey(p, r);
                 
-                // Cache logic
                 localStorage.setItem('garden_auth', JSON.stringify({u, r, p}));
                 
-                // UI Switch
                 document.getElementById('auth-gate').style.opacity = '0';
                 setTimeout(() => {
                     document.getElementById('auth-gate').style.display = 'none';
                     document.getElementById('app-root').classList.remove('hidden');
                     document.getElementById('room-display').textContent = r.toUpperCase();
                     
-                    // Fire Engines
                     ChatEngine.init();
                     MediaEngine.init();
                     UI.toast(`Welcome to the sanctuary, ${u}.`);

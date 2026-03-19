@@ -665,7 +665,7 @@
                         playerVars: { 'autoplay': 1, 'controls': 1 },
                         events: { 'onStateChange': this.onYTStateChange.bind(this) }
                     });
-                } else {
+                } else if (typeof AppState.ytPlayer.loadVideoById === 'function') {
                     AppState.ytPlayer.loadVideoById(vidId);
                 }
 
@@ -698,18 +698,30 @@
                 if(!AppState.ytPlayer) {
                     AppState.ytPlayer = new YT.Player('yt-player-frame', {
                         videoId: data.vidId,
-                        playerVars: { 'autoplay': data.state === 1 ? 1 : 0, 'controls': 0 }
+                        playerVars: { 'autoplay': data.state === 1 ? 1 : 0, 'controls': 0 },
+                        events: {
+                            'onReady': (e) => {
+                                if(data.state === 1) e.target.playVideo();
+                                if(data.time > 0) e.target.seekTo(data.time, true);
+                            }
+                        }
                     });
-                } else {
-                    const currentVid = AppState.ytPlayer.getVideoData().video_id;
-                    if(currentVid !== data.vidId) AppState.ytPlayer.loadVideoById(data.vidId);
-                    
-                    if(data.state === 1) AppState.ytPlayer.playVideo();
-                    if(data.state === 2) AppState.ytPlayer.pauseVideo();
-                    
-                    const currTime = AppState.ytPlayer.getCurrentTime();
-                    if(Math.abs(currTime - data.time) > 2) {
-                        AppState.ytPlayer.seekTo(data.time, true);
+                } else if (typeof AppState.ytPlayer.loadVideoById === 'function') {
+                    try {
+                        const vidData = AppState.ytPlayer.getVideoData ? AppState.ytPlayer.getVideoData() : null;
+                        const currentVid = vidData ? vidData.video_id : null;
+                        
+                        if(currentVid !== data.vidId) AppState.ytPlayer.loadVideoById(data.vidId);
+                        
+                        if(data.state === 1) AppState.ytPlayer.playVideo();
+                        if(data.state === 2) AppState.ytPlayer.pauseVideo();
+                        
+                        const currTime = AppState.ytPlayer.getCurrentTime();
+                        if(Math.abs(currTime - data.time) > 2) {
+                            AppState.ytPlayer.seekTo(data.time, true);
+                        }
+                    } catch (err) {
+                        console.warn("YT Sync wait", err);
                     }
                 }
             },
@@ -759,7 +771,7 @@
 
             close() {
                 document.getElementById('media-layer').style.display = 'none';
-                if(AppState.ytPlayer) AppState.ytPlayer.pauseVideo();
+                if(AppState.ytPlayer && typeof AppState.ytPlayer.pauseVideo === 'function') AppState.ytPlayer.pauseVideo();
                 const localVid = document.getElementById('p2p-local-vid');
                 localVid.pause(); localVid.src = ''; localVid.srcObject = null;
                 if(AppState.isHost) remove(ref(db, `rooms/${AppState.room}/mediaSync`));

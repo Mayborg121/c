@@ -91,8 +91,8 @@
 
         .reply-banner {
             font-size: 11px; color: var(--moss); background: rgba(45, 76, 45, 0.2);
-            padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
-            border-left: 2px solid var(--moss);
+            padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;
+            border-left: 2px solid var(--moss); line-height: 1.3;
         }
 
         /* --- Truth or Dare Module --- */
@@ -199,7 +199,7 @@
         
         <header class="h-16 flex items-center justify-between px-6 glass-panel border-b border-white/5 shrink-0 z-50">
             <div class="flex items-center gap-4">
-                <div id="presence-list" class="flex items-center gap-2 text-xl filter drop-shadow-md">
+                <div id="presence-list" class="flex flex-wrap items-center gap-2">
                     </div>
                 <div class="h-4 w-[1px] bg-white/10 mx-2 hidden sm:block"></div>
                 <div class="flex flex-col hidden sm:flex">
@@ -320,7 +320,8 @@
         const AppState = {
             user: '', room: '', pass: '',
             cryptoKey: null,
-            replyTarget: null,
+            replyTarget: null,       // Now holds { sender, text }
+            knownUsers: new Set(),   // Tracks all users seen for mentions
             peer: null, connectedPeers: new Set(),
             ytPlayer: null, ytReady: false, isHost: false,
             lastMsgSender: null,
@@ -346,9 +347,9 @@
             const hues = [190, 220, 260, 280, 310, 330];
             const hue = hues[Math.abs(hash) % hues.length];
             return {
-                name: `hsl(${hue}, 90%, 65%)`,             // Vibrant accent
-                text: `hsl(${hue}, 30%, 90%)`,             // Whitish with a tint of the hue
-                glow: `hsla(${hue}, 90%, 65%, 0.15)`       // Subtle glow for the text
+                name: `hsl(${hue}, 90%, 65%)`,             
+                text: `hsl(${hue}, 30%, 90%)`,             
+                glow: `hsla(${hue}, 90%, 65%, 0.15)`       
             };
         };
 
@@ -404,10 +405,13 @@
             scrollToBottom() {
                 setTimeout(() => { DOM.scroller.scrollTop = DOM.scroller.scrollHeight; }, 50);
             },
-            setReply(name) {
-                AppState.replyTarget = name;
+            setReply(msgObj) {
+                AppState.replyTarget = { sender: msgObj.sender, text: msgObj.text };
                 document.getElementById('reply-context').classList.remove('hidden');
-                document.getElementById('reply-target').textContent = name;
+                
+                // Truncate the preview text
+                const preview = msgObj.text.length > 30 ? msgObj.text.substring(0, 30) + '...' : msgObj.text;
+                document.getElementById('reply-target').innerHTML = `${msgObj.sender}: <span style="opacity:0.6; font-weight:normal">"${preview}"</span>`;
                 DOM.input.focus();
             },
             clearReply() {
@@ -435,11 +439,28 @@
                     const list = document.getElementById('presence-list');
                     list.innerHTML = '';
                     snap.forEach(s => {
-                        const span = document.createElement('span');
-                        span.textContent = s.val().icon;
-                        span.title = s.key;
-                        span.className = 'cursor-help transition-transform hover:scale-125';
-                        list.appendChild(span);
+                        AppState.knownUsers.add(s.key); // Keep track of names for mentions
+                        
+                        const userTheme = getUserColor(s.key);
+                        
+                        const pill = document.createElement('div');
+                        pill.className = 'flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full';
+                        
+                        const emojiSpan = document.createElement('span');
+                        emojiSpan.className = 'text-sm drop-shadow-md';
+                        emojiSpan.textContent = s.val().icon;
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = s.key;
+                        nameSpan.style.color = userTheme.name;
+                        nameSpan.style.opacity = '0.75'; // Semi-transparent accent
+                        nameSpan.style.fontSize = '11px';
+                        nameSpan.style.fontWeight = '500';
+                        nameSpan.style.letterSpacing = '0.05em';
+                        
+                        pill.appendChild(emojiSpan);
+                        pill.appendChild(nameSpan);
+                        list.appendChild(pill);
                     });
                 });
 
@@ -502,6 +523,9 @@
                 const text = await CryptoSys.decrypt(m.payload);
                 const time = m.ts ? new Date(m.ts).toLocaleTimeString([], {hour12:true, hour:'numeric', minute:'2-digit'}) : 'Now';
                 
+                // Log sender for future mentions
+                AppState.knownUsers.add(m.sender);
+
                 const div = document.createElement('div');
                 div.className = 'msg-container';
                 div.id = `msg-${m.id}`;
@@ -509,7 +533,6 @@
                 const isContinuous = AppState.lastMsgSender === m.sender;
                 AppState.lastMsgSender = m.sender;
 
-                // Get Custom User Colors
                 const userTheme = getUserColor(m.sender);
 
                 let html = '';
@@ -517,15 +540,38 @@
                     html += `<div class="msg-header"><span class="msg-sender" style="color: ${userTheme.name}; text-shadow: 0 0 8px ${userTheme.glow}">${m.sender}</span><span class="msg-ts">${time}</span></div>`;
                 }
 
-                // Format text (Links)
+                // URL Links
                 let formattedText = text;
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
                 formattedText = formattedText.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-yellow-500 underline hover:text-yellow-300">${url}</a>`);
 
-                // Apply whitish color with tint based on user
+                // Neon Name Mentions
+                AppState.knownUsers.forEach(knownUser => {
+                    if(knownUser.length >= 2) { 
+                        // Regex to find exact word matches for the name
+                        const safeName = knownUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(`\\b(${safeName})\\b`, 'gi');
+                        
+                        formattedText = formattedText.replace(regex, (match) => {
+                            const theme = getUserColor(knownUser);
+                            return `<span style="color: ${theme.name}; text-shadow: 0 0 8px ${theme.name}, 0 0 16px ${theme.glow}; font-weight: 700;">${match}</span>`;
+                        });
+                    }
+                });
+
+                // Apply whitish tint based on sender
                 html += `<div class="msg-content" style="color: ${userTheme.text}; text-shadow: 0 0 5px ${userTheme.glow}">`;
                 
-                if(m.reply) html += `<div class="reply-banner">@${m.reply}</div><br>`;
+                // Reply Block
+                if(m.reply) {
+                    // Fallback for older messages that only had a string
+                    const replyText = typeof m.reply === 'object' ? m.reply.text : "[Encrypted Log]";
+                    const replySender = typeof m.reply === 'object' ? m.reply.sender : m.reply;
+                    const replyPreview = replyText.length > 50 ? replyText.substring(0, 50) + '...' : replyText;
+                    
+                    html += `<div class="reply-banner">@${replySender}: <span style="opacity: 0.7; font-style: italic;">"${replyPreview}"</span></div><br>`;
+                }
+                
                 html += `<span>${formattedText}</span>`;
 
                 // Game Logic (Truth or Dare)
@@ -543,7 +589,9 @@
                 html += `</div>`;
                 
                 div.innerHTML = html;
-                div.ondblclick = () => UI.setReply(m.sender);
+                
+                // Double click passes the object to setup a quote
+                div.ondblclick = () => UI.setReply({ sender: m.sender, text: text });
                 
                 DOM.scroller.appendChild(div);
                 if(m.votes) this.updateTDVotes(m.id, m.votes);

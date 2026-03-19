@@ -75,14 +75,22 @@
 
         /* --- Chat UI --- */
         .msg-container {
-            display: flex; flex-direction: column; gap: 2px; padding: 0px 24px;
-            transition: background 0.2s; border-radius: 8px; margin: 1px 8px;
+            display: flex; flex-direction: column; gap: 4px; padding: 0px 24px;
+            transition: background 0.2s; border-radius: 8px; margin: 2px 8px;
         }
         .msg-container:hover { background: rgba(243, 206, 94, 0.02); }
+        .msg-container.new-sender { margin-top: 20px; } 
+        
         .msg-header { display: flex; align-items: baseline; gap: 5px; margin-bottom: 2px; }
-        .msg-sender { font-size: 12px; font-weight: 600; text-transform: capitalize; }
-        .msg-ts { font-size: 10px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
-        .msg-content { font-size: 14px; line-height: var(--line-h); word-break: break-word; }
+        .msg-sender { font-size: 13px; font-weight: 600; text-transform: capitalize; }
+        .msg-ts { font-size: 10px; color: var(--text-dim); font-variant-numeric: tabular-nums; opacity: 0.6; }
+        .msg-content { 
+            font-size: 14.5px; 
+            line-height: var(--line-h); 
+            word-break: break-word;
+            margin-top: 2px;
+            margin-bottom: 4px;
+        }
         
         .sys-msg {
             text-align: center; font-size: 11px; color: var(--text-dim);
@@ -115,7 +123,7 @@
         /* --- Inputs & Buttons --- */
         .garden-input {
             background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-warm); border-radius: 6px; font-size: 14px; transition: all 0.3s;
+            color: var(--text-warm); border-radius: 12px; font-size: 14px; transition: all 0.3s;
         }
         .garden-input:focus { border-color: var(--firefly); background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 10px rgba(243, 206, 94, 0.1); }
         
@@ -244,11 +252,12 @@
                     <button id="reply-clear" class="hover:text-white transition p-1">✕</button>
                 </div>
                 
-                <div class="flex items-end gap-3">
-                    <textarea id="msg-input" rows="1" placeholder="Whisper into the void..." class="flex-1 garden-input py-3.5 px-4 resize-none max-h-32 leading-relaxed custom-scrollbar shadow-inner"></textarea>
+                <div class="flex items-end gap-3 relative">
+                    <textarea id="msg-input" rows="1" placeholder="Whisper into the void... (Emojis supported! 😊)" class="flex-1 garden-input py-3 px-4 resize-none min-h-[44px] max-h-32 leading-relaxed custom-scrollbar shadow-inner"></textarea>
                     
-                    <button id="msg-send-btn" class="h-[52px] w-[52px] shrink-0 flex items-center justify-center bg-yellow-600/10 border border-yellow-600/30 rounded-full text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all shadow-lg">
-                        <svg class="w-5 h-5 translate-x-0.5 items-center" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                    <button id="msg-send-btn" class="h-[44px] px-5 mb-[1px] shrink-0 flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-xl text-yellow-500 hover:from-yellow-500 hover:to-orange-500 hover:text-black hover:shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all font-medium text-sm">
+                        <span>Send</span>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
                     </button>
                 </div>
             </div>
@@ -320,8 +329,8 @@
         const AppState = {
             user: '', room: '', pass: '',
             cryptoKey: null,
-            replyTarget: null,       // Now holds { sender, text }
-            knownUsers: new Set(),   // Tracks all users seen for mentions
+            replyTarget: null,       
+            knownUsers: new Set(),   
             peer: null, connectedPeers: new Set(),
             ytPlayer: null, ytReady: false, isHost: false,
             lastMsgSender: null,
@@ -336,20 +345,21 @@
         };
 
         // ==========================================
-        // 1.5. USER COLOR GENERATOR
+        // 1.5. USER COLOR GENERATOR (Natural Palette)
         // ==========================================
         const getUserColor = (name) => {
             let hash = 0;
             for (let i = 0; i < name.length; i++) {
                 hash = name.charCodeAt(i) + ((hash << 5) - hash);
             }
-            // Synthwave/Neon hues: Cyan, Electric Blue, Purple, Magenta, Pink
-            const hues = [190, 220, 260, 280, 310, 330];
+            // Hues: Yellow(~45), Green(~120), Orange(~25), Violet(~270)
+            const hues = [45, 120, 25, 270];
             const hue = hues[Math.abs(hash) % hues.length];
             return {
-                name: `hsl(${hue}, 90%, 65%)`,             
-                text: `hsl(${hue}, 30%, 90%)`,             
-                glow: `hsla(${hue}, 90%, 65%, 0.15)`       
+                name: `hsl(${hue}, 70%, 60%)`,        // Natural accent
+                text: `hsl(${hue}, 20%, 92%)`,        // Whitish with 20% accent saturation
+                border: `hsla(${hue}, 70%, 60%, 0.4)`, // Suble side border tint
+                glow: `hsla(${hue}, 70%, 60%, 0.15)`
             };
         };
 
@@ -357,8 +367,24 @@
         // 2. CRYPTOGRAPHY ENGINE (AES-256-CBC)
         // ==========================================
         const CryptoSys = {
-            bufToBase64: (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))),
-            base64ToBuf: (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0)),
+            // Buffer to Base64 (Using safe loop to prevent emoji 'Call Stack' breaks)
+            bufToBase64: (buf) => {
+                const bytes = new Uint8Array(buf);
+                let binString = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binString += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binString);
+            },
+            // Base64 to Buffer
+            base64ToBuf: (b64) => {
+                const binString = atob(b64);
+                const bytes = new Uint8Array(binString.length);
+                for (let i = 0; i < binString.length; i++) {
+                    bytes[i] = binString.charCodeAt(i);
+                }
+                return bytes.buffer;
+            },
             
             async deriveKey(password, saltStr) {
                 const enc = new TextEncoder();
@@ -371,6 +397,7 @@
             async encrypt(text) {
                 if(!AppState.cryptoKey) throw new Error("Key missing");
                 const iv = crypto.getRandomValues(new Uint8Array(16));
+                // TextEncoder natively handles full UTF-8 emojis securely
                 const encrypted = await crypto.subtle.encrypt({ name: "AES-CBC", iv }, AppState.cryptoKey, new TextEncoder().encode(text));
                 return { ct: this.bufToBase64(encrypted), iv: this.bufToBase64(iv) };
             },
@@ -380,6 +407,7 @@
                     const iv = this.base64ToBuf(bundle.iv);
                     const ct = this.base64ToBuf(bundle.ct);
                     const decrypted = await crypto.subtle.decrypt({ name: "AES-CBC", iv }, AppState.cryptoKey, ct);
+                    // TextDecoder rebuilds the multi-byte emojis securely
                     return new TextDecoder().decode(decrypted);
                 } catch (e) {
                     console.error("Decryption failed", e);
@@ -439,7 +467,7 @@
                     const list = document.getElementById('presence-list');
                     list.innerHTML = '';
                     snap.forEach(s => {
-                        AppState.knownUsers.add(s.key); // Keep track of names for mentions
+                        AppState.knownUsers.add(s.key); 
                         
                         const userTheme = getUserColor(s.key);
                         
@@ -453,7 +481,7 @@
                         const nameSpan = document.createElement('span');
                         nameSpan.textContent = s.key;
                         nameSpan.style.color = userTheme.name;
-                        nameSpan.style.opacity = '0.75'; // Semi-transparent accent
+                        nameSpan.style.opacity = '0.75';
                         nameSpan.style.fontSize = '11px';
                         nameSpan.style.fontWeight = '500';
                         nameSpan.style.letterSpacing = '0.05em';
@@ -516,14 +544,13 @@
                         ts: serverTimestamp(), reply: AppState.replyTarget
                     });
                     UI.clearReply();
-                } catch(e) { UI.toast("Failed to encrypt message."); }
+                } catch(e) { UI.toast("Failed to encrypt message."); console.error(e) }
             },
 
             async renderMessage(m) {
                 const text = await CryptoSys.decrypt(m.payload);
                 const time = m.ts ? new Date(m.ts).toLocaleTimeString([], {hour12:true, hour:'numeric', minute:'2-digit'}) : 'Now';
                 
-                // Log sender for future mentions
                 AppState.knownUsers.add(m.sender);
 
                 const div = document.createElement('div');
@@ -532,6 +559,10 @@
                 
                 const isContinuous = AppState.lastMsgSender === m.sender;
                 AppState.lastMsgSender = m.sender;
+
+                if (!isContinuous) {
+                    div.classList.add('new-sender');
+                }
 
                 const userTheme = getUserColor(m.sender);
 
@@ -548,7 +579,6 @@
                 // Neon Name Mentions
                 AppState.knownUsers.forEach(knownUser => {
                     if(knownUser.length >= 2) { 
-                        // Regex to find exact word matches for the name
                         const safeName = knownUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                         const regex = new RegExp(`\\b(${safeName})\\b`, 'gi');
                         
@@ -559,12 +589,11 @@
                     }
                 });
 
-                // Apply whitish tint based on sender
-                html += `<div class="msg-content" style="color: ${userTheme.text}; text-shadow: 0 0 5px ${userTheme.glow}">`;
+                // Apply whitish tint, left padding, and border accent below sender
+                html += `<div class="msg-content" style="color: ${userTheme.text}; text-shadow: 0 0 5px ${userTheme.glow}; padding-left: 12px; margin-left: 4px; border-left: 2px solid ${userTheme.border};">`;
                 
                 // Reply Block
                 if(m.reply) {
-                    // Fallback for older messages that only had a string
                     const replyText = typeof m.reply === 'object' ? m.reply.text : "[Encrypted Log]";
                     const replySender = typeof m.reply === 'object' ? m.reply.sender : m.reply;
                     const replyPreview = replyText.length > 50 ? replyText.substring(0, 50) + '...' : replyText;
@@ -575,7 +604,7 @@
                 html += `<span>${formattedText}</span>`;
 
                 // Game Logic (Truth or Dare)
-                if(text.includes("T or D?","t or d","T or d","T or D")) {
+                if(text.includes("T or D?") || text.includes("t or d") || text.includes("T or d") || text.includes("T or D")) {
                     html += `
                         <div class="td-module">
                             <div class="td-title">The Fates Demand</div>
@@ -590,7 +619,6 @@
                 
                 div.innerHTML = html;
                 
-                // Double click passes the object to setup a quote
                 div.ondblclick = () => UI.setReply({ sender: m.sender, text: text });
                 
                 DOM.scroller.appendChild(div);

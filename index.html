@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eternal Garden</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --forest-bg: #020402;
+            --forest-light: #0a140a;
+            --forest-accent: #112211;
+            --firefly: #f3ce5e;
+            --firefly-dim: #c9a53b;
+            --text-warm: #fdf6e3;
+            --text-dim: #a8a393;
+            --moss: #2d4c2d;
+            --danger: #8a2e2e;
+            --line-h: 1.4;
+        }
+
+        /* --- Global Reset & Typography --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none !important; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(243, 206, 94, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(243, 206, 94, 0.4); }
+        
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background-color: var(--forest-bg); color: var(--text-warm);
+            font-family: 'Inter', sans-serif; overflow: hidden;
+        }
+
+        .majestic { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
+        .ethereal { font-family: 'Playfair Display', serif; font-style: italic; }
+
+        /* --- Background Effects --- */
+        #garden-canvas {
+            position: fixed; inset: 0; z-index: 1; pointer-events: none;
+            background: radial-gradient(circle at 50% 50%, var(--forest-light) 0%, var(--forest-bg) 100%);
+            overflow: hidden;
+        }
+        .firefly {
+            position: absolute; width: 3px; height: 3px; background: var(--firefly);
+            border-radius: 50%; opacity: 0; filter: blur(1px);
+            box-shadow: 0 0 6px var(--firefly), 0 0 12px var(--firefly);
+            animation: drift var(--d) infinite ease-in-out;
+        }
+        .mist {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 50vh;
+            background: linear-gradient(to top, rgba(2,4,2,0.8), transparent);
+            pointer-events: none; z-index: 2;
+        }
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(0); opacity: 0; }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.6; }
+            100% { transform: translate(var(--x), var(--y)) scale(1.5); opacity: 0; }
+        }
+
+        /* --- Layout & Glassmorphism --- */
+        #app-root { display: flex; flex-direction: column; height: 100dvh; width: 100%; position: relative; z-index: 10; }
+        .glass-panel { 
+            background: rgba(2, 4, 2, 0.75); 
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); 
+        }
+
+        /* --- Chat UI --- */
+        .msg-container {
+            display: flex; flex-direction: column; gap: 2px; padding: 0px 24px;
+            transition: background 0.2s; border-radius: 8px; margin: 1px 8px;
+        }
+        .msg-container:hover { background: rgba(243, 206, 94, 0.02); }
+        .msg-header { display: flex; align-items: baseline; gap: 5px; margin-bottom: 2px; }
+        .msg-sender { font-size: 12px; font-weight: 600; color: var(--firefly); text-transform: capitalize; }
+        .msg-ts { font-size: 10px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+        .msg-content { font-size: 14px; line-height: var(--line-h); color: rgba(253, 246, 227, 0.95); word-break: break-word; }
+        
+        .sys-msg {
+            text-align: center; font-size: 11px; color: var(--text-dim);
+            margin: 10px 0; font-style: italic; opacity: 0.7;
+        }
+
+        .reply-banner {
+            font-size: 11px; color: var(--moss); background: rgba(45, 76, 45, 0.2);
+            padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; display: inline-block;
+            border-left: 2px solid var(--moss);
+        }
+
+        /* --- Truth or Dare Module --- */
+        .td-module {
+            background: linear-gradient(135deg, rgba(243, 206, 94, 0.1) 0%, rgba(243, 206, 94, 0.02) 100%);
+            border: 1px solid rgba(243, 206, 94, 0.2); border-radius: 8px; padding: 12px; margin-top: 8px;
+            max-width: 400px;
+        }
+        .td-title { font-size: 12px; color: var(--firefly); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .td-actions { display: flex; gap: 8px; }
+        .td-btn {
+            flex: 1; padding: 6px 0; font-size: 12px; font-weight: 600; text-align: center;
+            border: 1px solid var(--firefly); border-radius: 4px; cursor: pointer;
+            transition: all 0.2s; color: var(--firefly); background: transparent;
+        }
+        .td-btn:hover { background: var(--firefly); color: var(--forest-bg); }
+        .td-results { margin-top: 8px; font-size: 11px; color: var(--text-dim); display: flex; flex-direction: column; gap: 4px; }
+        .td-vote-row { display: flex; justify-content: space-between; padding: 2px 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+
+        /* --- Inputs & Buttons --- */
+        .garden-input {
+            background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-warm); border-radius: 6px; font-size: 14px; transition: all 0.3s;
+        }
+        .garden-input:focus { border-color: var(--firefly); background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 10px rgba(243, 206, 94, 0.1); }
+        
+        /* --- Video Player Architecture --- */
+        #media-layer {
+            width: 100%; background: #000; display: none; flex-direction: column;
+            border-bottom: 1px solid rgba(243, 206, 94, 0.2); z-index: 40;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+        }
+        .aspect-16-9 { width: 100%; aspect-ratio: 16 / 9; position: relative; max-height: 40vh; background: #050505; }
+        
+        .media-controls {
+            position: absolute; top: 0; left: 0; right: 0; padding: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            opacity: 0; transition: opacity 0.3s; z-index: 50;
+        }
+        .aspect-16-9:hover .media-controls { opacity: 1; }
+        
+        .btn-silence {
+            background: rgba(138, 46, 46, 0.8); color: white; border: none; padding: 6px 12px;
+            border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+            transition: background 0.2s; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .btn-silence:hover { background: var(--danger); }
+        
+        .media-title { font-size: 12px; color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px black; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+
+        /* --- Toast Notifications --- */
+        #toast-container { position: fixed; top: 70px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast {
+            background: var(--forest-accent); border-left: 3px solid var(--firefly); color: var(--text-warm);
+            padding: 12px 20px; border-radius: 4px; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease-out forwards; transform: translateX(120%);
+        }
+        @keyframes slideIn { to { transform: translateX(0); } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+
+        /* --- Loading & Misc --- */
+        .typing-indicator { font-size: 11px; color: var(--firefly-dim); font-style: italic; padding: 0 24px; height: 16px; transition: opacity 0.3s; }
+        .hidden { display: none !important; }
+
+        @media (max-width: 640px) {
+            .msg-container { padding: 0px 12px; }
+            #side-menu { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="garden-canvas"><div class="mist"></div></div>
+
+    <div id="toast-container"></div>
+
+    <div id="auth-gate" class="fixed inset-0 z-[100] flex items-center justify-center glass-panel px-6 transition-opacity duration-500">
+        <div class="w-full max-w-sm space-y-10 text-center relative z-10">
+            <div>
+                <h1 class="majestic text-4xl text-yellow-500 mb-3 drop-shadow-lg shadow-yellow-500/50">Eternal Garden</h1>
+                <p class="ethereal text-sm text-yellow-600/70">Enter the room of encrypted echoes.</p>
+            </div>
+            
+            <div class="space-y-4 bg-black/40 p-6 rounded-xl border border-white/5 shadow-2xl">
+                <input type="text" id="in-name" placeholder="Your Spirit Name" class="w-full garden-input py-3 px-4 text-center" autocomplete="off">
+                <div class="flex gap-3">
+                    <input type="text" id="in-room" placeholder="Room ID" class="w-1/2 garden-input py-3 px-4 text-center" autocomplete="off">
+                    <input type="password" id="in-pass" placeholder="Passkey" class="w-1/2 garden-input py-3 px-4 text-center">
+                </div>
+                <button id="btn-enter" class="w-full py-4 mt-2 bg-yellow-900/20 border border-yellow-700/40 rounded text-yellow-500 majestic text-xs uppercase tracking-[0.3em] hover:bg-yellow-800/40 transition-all hover:shadow-[0_0_15px_rgba(243,206,94,0.2)]">
+                    Unlock Sanctuary
+                </button>
+            </div>
+            
+            <div class="flex flex-col items-center gap-2 opacity-30">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <p class="text-[9px] uppercase tracking-widest">End-to-End WebCrypto AES-CBC</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-root" class="hidden">
+        
+        <header class="h-16 flex items-center justify-between px-6 glass-panel border-b border-white/5 shrink-0 z-50">
+            <div class="flex items-center gap-4">
+                <div id="presence-list" class="flex items-center gap-2 text-xl filter drop-shadow-md">
+                    </div>
+                <div class="h-4 w-[1px] bg-white/10 mx-2 hidden sm:block"></div>
+                <div class="flex flex-col hidden sm:flex">
+                    <span class="majestic text-[10px] text-yellow-500 tracking-[0.4em]">Eternal Garden</span>
+                    <span id="room-display" class="text-[9px] text-gray-500 font-mono tracking-widest">ROOM_ID</span>
+                </div>
+            </div>
+            
+            <button id="menu-trigger" class="p-2 text-gray-400 hover:text-yellow-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+        </header>
+
+        <div id="media-layer">
+            <div class="aspect-16-9 group">
+                <div class="media-controls">
+                    <span id="media-title-display" class="media-title">No Media Playing</span>
+                    <button id="video-close-btn" class="btn-silence">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        Silence
+                    </button>
+                </div>
+
+                <div id="yt-player-container" class="w-full h-full hidden pointer-events-none sm:pointer-events-auto">
+                    <div id="yt-player-frame" class="w-full h-full"></div>
+                </div>
+                <video id="p2p-local-vid" class="w-full h-full hidden object-contain" playsinline controls></video>
+            </div>
+        </div>
+
+        <main id="chat-scroller" class="flex-1 overflow-y-auto py-4 flex flex-col scroll-smooth">
+            <div class="sys-msg mt-auto">The garden awakens. Messages are heavily encrypted.</div>
+            </main>
+        
+        <div id="typing-status" class="typing-indicator opacity-0">Someone is whispering...</div>
+
+        <footer class="p-4 glass-panel border-t border-white/5 shrink-0 z-50">
+            <div class="max-w-5xl mx-auto relative">
+                
+                <div id="reply-context" class="hidden absolute -top-9 left-3 right-15 flex items-center justify-between text-[11px] text-yellow-600 bg-black/80 px-4 mr-4 py-1.5 rounded-t-md border border-white/10 border-b-0 backdrop-blur-md">
+                    <span>Replying to <span id="reply-target" class="font-bold"></span></span>
+                    <button id="reply-clear" class="hover:text-white transition p-1">✕</button>
+                </div>
+                
+                <div class="flex items-end gap-3">
+                    <textarea id="msg-input" rows="1" placeholder="Whisper into the void..." class="flex-1 garden-input py-3.5 px-4 resize-none max-h-32 leading-relaxed custom-scrollbar shadow-inner"></textarea>
+                    
+                    <button id="msg-send-btn" class="h-[52px] w-[52px] shrink-0 flex items-center justify-center bg-yellow-600/10 border border-yellow-600/30 rounded-full text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all shadow-lg">
+                        <svg class="w-5 h-5 translate-x-0.5 items-center" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </footer>
+
+        <div id="side-menu" class="fixed inset-y-0 right-0 w-80 bg-[#020402]/95 backdrop-blur-2xl translate-x-full transition-transform duration-500 z-[110] shadow-[-10px_0_30px_rgba(0,0,0,0.8)] border-l border-white/5 flex flex-col">
+            <div class="p-8 flex justify-between items-center border-b border-white/5">
+                <h3 class="majestic text-sm text-yellow-500 uppercase tracking-widest">Garden Paths</h3>
+                <button id="menu-close" class="text-gray-500 hover:text-white p-2 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <nav class="flex-1 p-8 space-y-8 overflow-y-auto">
+                <div class="group cursor-pointer" id="opt-host-local">
+                    <div class="flex items-center gap-3 text-yellow-600 group-hover:text-yellow-400 transition-colors mb-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        <span class="text-xs tracking-[0.2em] uppercase font-light">Host Local Video</span>
+                    </div>
+                    <span class="text-[10px] text-gray-500 block ml-8">Stream .mp4 files directly via Peer-to-Peer WebRTC. No server limits.</span>
+                </div>
+
+                <div class="group cursor-pointer" id="opt-host-yt">
+                    <div class="flex items-center gap-3 text-yellow-600 group-hover:text-yellow-400 transition-colors mb-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-xs tracking-[0.2em] uppercase font-light">Play YouTube</span>
+                    </div>
+                    <span class="text-[10px] text-gray-500 block ml-8">Paste a URL. Synchronizes play/pause across all active members.</span>
+                </div>
+
+                <div class="group cursor-pointer mt-12 pt-8 border-t border-white/5" id="opt-purge">
+                    <div class="flex items-center gap-3 text-red-800 group-hover:text-red-500 transition-colors mb-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <span class="text-xs tracking-[0.2em] uppercase font-light">Purge Echoes</span>
+                    </div>
+                    <span class="text-[10px] text-gray-500 block ml-8">Permanently delete all logs from the database.</span>
+                </div>
+            </nav>
+
+            <div class="p-8 border-t border-white/5">
+                <button id="opt-logout" class="w-full py-3 bg-white/5 hover:bg-white/10 text-xs tracking-widest uppercase text-gray-400 hover:text-white transition rounded">
+                    Leave Garden
+                </button>
+            </div>
+            
+            <input type="file" id="p2p-file-pick" class="hidden" accept="video/mp4,video/webm,video/ogg">
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onChildAdded, onChildChanged, onValue, remove, onDisconnect, serverTimestamp, query, limitToLast, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+        // ==========================================
+        // 1. ARCHITECTURE CONFIGURATION
+        // ==========================================
+        const fbConfig = {
+            apiKey: "AIzaSyCqJ9pqMpjME0NgTe_PnKwigD-oKT1Lzh8",
+            authDomain: "tictactoe-office.firebaseapp.com",
+            databaseURL: "https://tictactoe-office-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "tictactoe-office"
+        };
+        const app = initializeApp(fbConfig);
+        const db = getDatabase(app);
+
+        const AppState = {
+            user: '', room: '', pass: '',
+            cryptoKey: null,
+            replyTarget: null,
+            peer: null, connectedPeers: new Set(),
+            ytPlayer: null, ytReady: false, isHost: false,
+            lastMsgSender: null,
+            typingTimeout: null
+        };
+
+        const DOM = {
+            scroller: document.getElementById('chat-scroller'),
+            input: document.getElementById('msg-input'),
+            sendBtn: document.getElementById('msg-send-btn'),
+            typingStatus: document.getElementById('typing-status')
+        };
+
+        // ==========================================
+        // 2. CRYPTOGRAPHY ENGINE (AES-256-CBC)
+        // ==========================================
+        const CryptoSys = {
+            bufToBase64: (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))),
+            base64ToBuf: (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0)),
+            
+            async deriveKey(password, saltStr) {
+                const enc = new TextEncoder();
+                const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+                return crypto.subtle.deriveKey(
+                    { name: "PBKDF2", salt: enc.encode(saltStr), iterations: 100000, hash: "SHA-256" },
+                    keyMaterial, { name: "AES-CBC", length: 256 }, false, ["encrypt", "decrypt"]
+                );
+            },
+            async encrypt(text) {
+                if(!AppState.cryptoKey) throw new Error("Key missing");
+                const iv = crypto.getRandomValues(new Uint8Array(16));
+                const encrypted = await crypto.subtle.encrypt({ name: "AES-CBC", iv }, AppState.cryptoKey, new TextEncoder().encode(text));
+                return { ct: this.bufToBase64(encrypted), iv: this.bufToBase64(iv) };
+            },
+            async decrypt(bundle) {
+                if(!AppState.cryptoKey) return "[Awaiting Key...]";
+                try {
+                    const iv = this.base64ToBuf(bundle.iv);
+                    const ct = this.base64ToBuf(bundle.ct);
+                    const decrypted = await crypto.subtle.decrypt({ name: "AES-CBC", iv }, AppState.cryptoKey, ct);
+                    return new TextDecoder().decode(decrypted);
+                } catch (e) {
+                    console.error("Decryption failed", e);
+                    return "🍃 [Corrupted Whisper]";
+                }
+            }
+        };
+
+        // ==========================================
+        // 3. UI CONTROLLER & TOASTS
+        // ==========================================
+        const UI = {
+            toast(msg) {
+                const container = document.getElementById('toast-container');
+                const t = document.createElement('div');
+                t.className = 'toast'; t.textContent = msg;
+                container.appendChild(t);
+                setTimeout(() => {
+                    t.style.animation = 'fadeOut 0.3s ease-out forwards';
+                    setTimeout(() => t.remove(), 300);
+                }, 3000);
+            },
+            scrollToBottom() {
+                setTimeout(() => { DOM.scroller.scrollTop = DOM.scroller.scrollHeight; }, 50);
+            },
+            setReply(name) {
+                AppState.replyTarget = name;
+                document.getElementById('reply-context').classList.remove('hidden');
+                document.getElementById('reply-target').textContent = name;
+                DOM.input.focus();
+            },
+            clearReply() {
+                AppState.replyTarget = null;
+                document.getElementById('reply-context').classList.add('hidden');
+            },
+            autoResizeInput() {
+                DOM.input.style.height = 'auto';
+                DOM.input.style.height = (DOM.input.scrollHeight) + 'px';
+            }
+        };
+
+        // ==========================================
+        // 4. CHAT & FIREBASE ENGINE
+        // ==========================================
+        const ChatEngine = {
+            init() {
+                // Presence
+                const pRef = ref(db, `rooms/${AppState.room}/presence/${AppState.user}`);
+                const emojis = ['🌱', '🕯️', '🌿', '🌕', '🌑'];
+                set(pRef, { active: true, icon: emojis[Math.floor(Math.random()*emojis.length)] });
+                onDisconnect(pRef).remove();
+
+                onValue(ref(db, `rooms/${AppState.room}/presence`), (snap) => {
+                    const list = document.getElementById('presence-list');
+                    list.innerHTML = '';
+                    snap.forEach(s => {
+                        const span = document.createElement('span');
+                        span.textContent = s.val().icon;
+                        span.title = s.key;
+                        span.className = 'cursor-help transition-transform hover:scale-125';
+                        list.appendChild(span);
+                    });
+                });
+
+                // Typing Sync
+                DOM.input.addEventListener('input', () => {
+                    UI.autoResizeInput();
+                    set(ref(db, `rooms/${AppState.room}/typing/${AppState.user}`), true);
+                    clearTimeout(AppState.typingTimeout);
+                    AppState.typingTimeout = setTimeout(() => {
+                        set(ref(db, `rooms/${AppState.room}/typing/${AppState.user}`), false);
+                    }, 1500);
+                });
+
+                onValue(ref(db, `rooms/${AppState.room}/typing`), (snap) => {
+                    const typists = [];
+                    snap.forEach(s => { if(s.val() && s.key !== AppState.user) typists.push(s.key); });
+                    if(typists.length > 0) {
+                        DOM.typingStatus.textContent = `${typists.join(', ')} is whispering...`;
+                        DOM.typingStatus.style.opacity = '1';
+                    } else {
+                        DOM.typingStatus.style.opacity = '0';
+                    }
+                });
+
+                // Messages (Using onChildAdded to fix re-entry bug)
+                const msgsRef = query(ref(db, `rooms/${AppState.room}/msgs`), limitToLast(50));
+                
+                // Clear initial placeholder text on first real load
+                let isFirstLoad = true;
+                
+                onChildAdded(msgsRef, async (snap) => {
+                    if(isFirstLoad) { DOM.scroller.innerHTML = ''; isFirstLoad = false; }
+                    const m = { id: snap.key, ...snap.val() };
+                    await this.renderMessage(m);
+                });
+
+                // Listen for Truth or Dare vote updates
+                onChildChanged(msgsRef, async (snap) => {
+                    const m = { id: snap.key, ...snap.val() };
+                    if(m.votes) this.updateTDVotes(m.id, m.votes);
+                });
+            },
+
+            async send() {
+                const val = DOM.input.value.trim();
+                if(!val) return;
+
+                DOM.input.value = ''; UI.autoResizeInput(); DOM.input.focus();
+                
+                try {
+                    const bundle = await CryptoSys.encrypt(val);
+                    await push(ref(db, `rooms/${AppState.room}/msgs`), {
+                        sender: AppState.user, payload: bundle,
+                        ts: serverTimestamp(), reply: AppState.replyTarget
+                    });
+                    UI.clearReply();
+                } catch(e) { UI.toast("Failed to encrypt message."); }
+            },
+
+            async renderMessage(m) {
+                const text = await CryptoSys.decrypt(m.payload);
+                const time = m.ts ? new Date(m.ts).toLocaleTimeString([], {hour12:true, hour:'numeric', minute:'2-digit'}) : 'Now';
+                
+                const div = document.createElement('div');
+                div.className = 'msg-container';
+                div.id = `msg-${m.id}`;
+                
+                // Group messages visually
+                const isContinuous = AppState.lastMsgSender === m.sender;
+                AppState.lastMsgSender = m.sender;
+
+                let html = '';
+                if(!isContinuous) {
+                    html += `<div class="msg-header"><span class="msg-sender">${m.sender}</span><span class="msg-ts">${time}</span></div>`;
+                }
+
+                // Format text (Links)
+                let formattedText = text;
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                formattedText = formattedText.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-yellow-500 underline hover:text-yellow-300">${url}</a>`);
+
+                html += `<div class="msg-content">`;
+                if(m.reply) html += `<div class="reply-banner">@${m.reply}</div><br>`;
+                html += `<span>${formattedText}</span>`;
+
+                // Game Logic (Truth or Dare)
+                if(text.includes("T or D?","t or d","T or d","T or D")) {
+                    html += `
+                        <div class="td-module">
+                            <div class="td-title">The Fates Demand</div>
+                            <div class="td-actions">
+                                <button onclick="window.castTD('${m.id}', 'Truth')" class="td-btn">TRUTH</button>
+                                <button onclick="window.castTD('${m.id}', 'Dare')" class="td-btn">DARE</button>
+                            </div>
+                            <div id="td-res-${m.id}" class="td-results"></div>
+                        </div>`;
+                }
+                html += `</div>`;
+                
+                div.innerHTML = html;
+                div.ondblclick = () => UI.setReply(m.sender);
+                
+                DOM.scroller.appendChild(div);
+                if(m.votes) this.updateTDVotes(m.id, m.votes);
+                UI.scrollToBottom();
+            },
+
+            updateTDVotes(msgId, votes) {
+                const container = document.getElementById(`td-res-${msgId}`);
+                if(!container) return;
+                container.innerHTML = '';
+                for(const [user, choice] of Object.entries(votes)) {
+                    container.innerHTML += `<div class="td-vote-row"><span>${user}</span><span style="color:var(--firefly)">${choice}</span></div>`;
+                }
+            }
+        };
+
+        // ==========================================
+        // 5. MEDIA & SYNC ENGINE (YT + WebRTC)
+        // ==========================================
+        const MediaEngine = {
+            init() {
+                // Listen for global room media sync
+                onValue(ref(db, `rooms/${AppState.room}/mediaSync`), (snap) => {
+                    const data = snap.val();
+                    if(!data) return this.close();
+                    if(data.sender === AppState.user) return; // Ignore own commands
+                    
+                    if(data.type === 'yt') this.handleRemoteYTSync(data);
+                });
+
+                this.setupWebRTC();
+            },
+
+            launchYT(url) {
+                const vidId = url.split('v=')[1]?.split('&')[0] || url.split('be/')[1];
+                if(!vidId) return UI.toast("Invalid YT Link");
+
+                document.getElementById('media-layer').style.display = 'flex';
+                document.getElementById('yt-player-container').classList.remove('hidden');
+                document.getElementById('p2p-local-vid').classList.add('hidden');
+                document.getElementById('media-title-display').textContent = "YouTube Stream";
+                
+                AppState.isHost = true;
+
+                if(!AppState.ytPlayer) {
+                    AppState.ytPlayer = new YT.Player('yt-player-frame', {
+                        videoId: vidId,
+                        playerVars: { 'autoplay': 1, 'controls': 1 },
+                        events: { 'onStateChange': this.onYTStateChange.bind(this) }
+                    });
+                } else {
+                    AppState.ytPlayer.loadVideoById(vidId);
+                }
+
+                set(ref(db, `rooms/${AppState.room}/mediaSync`), {
+                    type: 'yt', vidId: vidId, sender: AppState.user, state: 1, time: 0, ts: Date.now()
+                });
+            },
+
+            onYTStateChange(e) {
+                if(!AppState.isHost) return;
+                const state = e.data; // 1 = playing, 2 = paused
+                const time = AppState.ytPlayer.getCurrentTime();
+                
+                if(state === 1 || state === 2) {
+                    set(ref(db, `rooms/${AppState.room}/mediaSync`), {
+                        type: 'yt', vidId: AppState.ytPlayer.getVideoData().video_id,
+                        sender: AppState.user, state: state, time: time, ts: Date.now()
+                    });
+                }
+            },
+
+            handleRemoteYTSync(data) {
+                document.getElementById('media-layer').style.display = 'flex';
+                document.getElementById('yt-player-container').classList.remove('hidden');
+                document.getElementById('p2p-local-vid').classList.add('hidden');
+                document.getElementById('media-title-display').textContent = `Host: ${data.sender}`;
+                
+                AppState.isHost = false;
+
+                if(!AppState.ytPlayer) {
+                    AppState.ytPlayer = new YT.Player('yt-player-frame', {
+                        videoId: data.vidId,
+                        playerVars: { 'autoplay': data.state === 1 ? 1 : 0, 'controls': 0 }
+                    });
+                } else {
+                    const currentVid = AppState.ytPlayer.getVideoData().video_id;
+                    if(currentVid !== data.vidId) AppState.ytPlayer.loadVideoById(data.vidId);
+                    
+                    if(data.state === 1) AppState.ytPlayer.playVideo();
+                    if(data.state === 2) AppState.ytPlayer.pauseVideo();
+                    
+                    // Sync time if difference is > 2 seconds
+                    const currTime = AppState.ytPlayer.getCurrentTime();
+                    if(Math.abs(currTime - data.time) > 2) {
+                        AppState.ytPlayer.seekTo(data.time, true);
+                    }
+                }
+            },
+
+            setupWebRTC() {
+                const peerId = `${AppState.room}-${AppState.user}`.replace(/\s+/g, '-');
+                AppState.peer = new Peer(peerId);
+                
+                AppState.peer.on('call', (call) => {
+                    call.answer(); // Auto answer
+                    call.on('stream', (stream) => {
+                        const vid = document.getElementById('p2p-local-vid');
+                        document.getElementById('media-layer').style.display = 'flex';
+                        vid.classList.remove('hidden');
+                        document.getElementById('yt-player-container').classList.add('hidden');
+                        document.getElementById('media-title-display').textContent = "P2P Local Stream";
+                        vid.srcObject = stream;
+                        vid.play();
+                    });
+                });
+            },
+
+            hostLocalFile(file) {
+                const url = URL.createObjectURL(file);
+                const vid = document.getElementById('p2p-local-vid');
+                
+                document.getElementById('media-layer').style.display = 'flex';
+                vid.classList.remove('hidden');
+                document.getElementById('yt-player-container').classList.add('hidden');
+                document.getElementById('media-title-display').textContent = `Hosting: ${file.name}`;
+                
+                vid.src = url;
+                vid.play();
+
+                // Capture stream and send to peers
+                vid.onplay = () => {
+                    const stream = vid.captureStream();
+                    // Fetch presence list to know who to call
+                    get(ref(db, `rooms/${AppState.room}/presence`)).then(snap => {
+                        snap.forEach(s => {
+                            if(s.key !== AppState.user) {
+                                const targetId = `${AppState.room}-${s.key}`.replace(/\s+/g, '-');
+                                AppState.peer.call(targetId, stream);
+                            }
+                        });
+                    });
+                };
+            },
+
+            close() {
+                document.getElementById('media-layer').style.display = 'none';
+                if(AppState.ytPlayer) AppState.ytPlayer.pauseVideo();
+                const localVid = document.getElementById('p2p-local-vid');
+                localVid.pause(); localVid.src = ''; localVid.srcObject = null;
+                // If Host, broadcast close
+                if(AppState.isHost) remove(ref(db, `rooms/${AppState.room}/mediaSync`));
+            }
+        };
+
+        // ==========================================
+        // 6. INITIALIZATION & BINDINGS
+        // ==========================================
+        
+        async function bootSanctuary() {
+            const u = document.getElementById('in-name').value.trim();
+            const r = document.getElementById('in-room').value.trim();
+            const p = document.getElementById('in-pass').value.trim();
+
+            if(!u || !r || !p) {
+                const gate = document.querySelector('#auth-gate > div');
+                gate.style.transform = 'translateX(-10px)';
+                setTimeout(()=> gate.style.transform = 'translateX(10px)', 100);
+                setTimeout(()=> gate.style.transform = 'translateX(0)', 200);
+                return UI.toast("Complete all fields.");
+            }
+
+            try {
+                // Initialize State and Key Before moving forward
+                AppState.user = u; AppState.room = r; AppState.pass = p;
+                AppState.cryptoKey = await CryptoSys.deriveKey(p, r);
+                
+                // Cache logic
+                localStorage.setItem('garden_auth', JSON.stringify({u, r, p}));
+                
+                // UI Switch
+                document.getElementById('auth-gate').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('auth-gate').style.display = 'none';
+                    document.getElementById('app-root').classList.remove('hidden');
+                    document.getElementById('room-display').textContent = r.toUpperCase();
+                    
+                    // Fire Engines
+                    ChatEngine.init();
+                    MediaEngine.init();
+                    UI.toast(`Welcome to the sanctuary, ${u}.`);
+                }, 500);
+
+            } catch(e) { UI.toast("Failed to unlock sanctuary. Check console."); console.error(e); }
+        }
+
+        // Global Bindings
+        document.getElementById('btn-enter').onclick = bootSanctuary;
+        
+        DOM.sendBtn.onclick = () => ChatEngine.send();
+        DOM.input.onkeydown = (e) => {
+            if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ChatEngine.send(); }
+        };
+
+        // Menu Bindings
+        const sideMenu = document.getElementById('side-menu');
+        document.getElementById('menu-trigger').onclick = () => sideMenu.style.transform = 'translateX(0)';
+        document.getElementById('menu-close').onclick = () => sideMenu.style.transform = 'translateX(100%)';
+        document.getElementById('reply-clear').onclick = UI.clearReply;
+        document.getElementById('video-close-btn').onclick = () => MediaEngine.close();
+
+        // Menu Actions
+        document.getElementById('opt-host-local').onclick = () => document.getElementById('p2p-file-pick').click();
+        document.getElementById('p2p-file-pick').onchange = (e) => {
+            if(e.target.files.length > 0) MediaEngine.hostLocalFile(e.target.files[0]);
+            sideMenu.style.transform = 'translateX(100%)';
+        };
+
+        document.getElementById('opt-host-yt').onclick = () => {
+            const link = prompt("Enter YouTube URL:");
+            if(link) MediaEngine.launchYT(link);
+            sideMenu.style.transform = 'translateX(100%)';
+        };
+
+        document.getElementById('opt-purge').onclick = () => {
+            if(confirm("Permanently burn all chat logs for everyone?")) {
+                remove(ref(db, `rooms/${AppState.room}/msgs`));
+                UI.toast("Echoes purged.");
+                sideMenu.style.transform = 'translateX(100%)';
+            }
+        };
+
+        document.getElementById('opt-logout').onclick = () => {
+            localStorage.removeItem('garden_auth');
+            location.reload();
+        };
+
+        // Global functions for inline HTML calls (Truth or Dare)
+        window.castTD = (msgId, choice) => {
+            set(ref(db, `rooms/${AppState.room}/msgs/${msgId}/votes/${AppState.user}`), choice);
+        };
+
+        // Cache Auto-load
+        const cached = localStorage.getItem('garden_auth');
+        if(cached) {
+            try {
+                const d = JSON.parse(cached);
+                document.getElementById('in-name').value = d.u;
+                document.getElementById('in-room').value = d.r;
+                document.getElementById('in-pass').value = d.p;
+            } catch(e){}
+        }
+
+        // Environmental Effects (Fireflies)
+        const initEnv = () => {
+            const canv = document.getElementById('garden-canvas');
+            for(let i=0; i<40; i++) {
+                const f = document.createElement('div');
+                f.className = 'firefly';
+                f.style.left = Math.random() * 100 + 'vw';
+                f.style.top = Math.random() * 100 + 'vh';
+                f.style.setProperty('--x', (Math.random() * 600 - 300) + 'px');
+                f.style.setProperty('--y', (Math.random() * 600 - 300) + 'px');
+                f.style.setProperty('--d', (8 + Math.random() * 15) + 's');
+                f.style.animationDelay = Math.random() * 10 + 's';
+                canv.appendChild(f);
+            }
+        };
+        initEnv();
+        
+        // Expose YT API hook
+        window.onYouTubeIframeAPIReady = () => { AppState.ytReady = true; };
+    </script>
+</body>
+</html>

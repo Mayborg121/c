@@ -14,16 +14,17 @@
     
     <style>
         :root {
-            --forest-bg: #020402;
-            --forest-light: #0a140a;
-            --forest-accent: #112211;
+            /* Removed the greenish tints, replaced with deep dark night/shadow tones */
+            --forest-bg: #050505; 
+            --forest-light: #121212; 
+            --forest-accent: #1a1a1a;
             --firefly: #f3ce5e;
             --firefly-dim: #c9a53b;
-            --text-warm: #fdf6e3;
-            --text-dim: #a8a393;
-            --moss: #2d4c2d;
+            --text-warm: #f2ebd9;
+            --text-dim: #999999;
+            --moss: #4a4a4a; /* Replaced moss green with slate grey */
             --danger: #8a2e2e;
-            --line-h: 1.4;
+            --line-h: 1.2;
         }
 
         /* --- Global Reset & Typography --- */
@@ -36,7 +37,8 @@
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background-color: var(--forest-bg); color: var(--text-warm);
-            font-family: 'Inter', sans-serif; overflow: hidden;
+            font-family: 'Inter', sans-serif; 
+            overflow: hidden; /* Prevents entire page from scrolling */
         }
 
         .majestic { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
@@ -56,7 +58,7 @@
         }
         .mist {
             position: absolute; bottom: 0; left: 0; right: 0; height: 50vh;
-            background: linear-gradient(to top, rgba(2,4,2,0.8), transparent);
+            background: linear-gradient(to top, rgba(5,5,5,0.95), transparent);
             pointer-events: none; z-index: 2;
         }
         @keyframes drift {
@@ -67,16 +69,25 @@
         }
 
         /* --- Layout & Glassmorphism --- */
-        #app-root { display: flex; flex-direction: column; height: 100dvh; width: 100%; position: relative; z-index: 10; }
+        #app-root { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100dvh; 
+            width: 100%; 
+            position: relative; 
+            z-index: 10; 
+            overflow: hidden; /* Locks the master container */
+        }
         .glass-panel { 
-            background: rgba(2, 4, 2, 0.75); 
+            background: rgba(5, 5, 5, 0.75); 
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); 
         }
 
         /* --- Chat UI --- */
         .msg-container {
             display: flex; flex-direction: column; gap: 4px; padding: 0px 24px;
-            transition: background 0.2s; border-radius: 8px; margin: 2px 8px;
+            transition: background 0.2s; border-radius: 8px; margin: 1px 8px;
+            flex-shrink: 0; /* Prevents flexbox from squishing messages */
         }
         .msg-container:hover { background: rgba(243, 206, 94, 0.02); }
         .msg-container.new-sender { margin-top: 20px; } 
@@ -88,8 +99,8 @@
             font-size: 14.5px; 
             line-height: var(--line-h); 
             word-break: break-word;
-            margin-top: 2px;
-            margin-bottom: 4px;
+            margin-top: 1px;
+            margin-bottom: 2px;
         }
         
         .sys-msg {
@@ -98,7 +109,7 @@
         }
 
         .reply-banner {
-            font-size: 11px; color: var(--moss); background: rgba(45, 76, 45, 0.2);
+            font-size: 11px; color: var(--moss); background: rgba(255, 255, 255, 0.05);
             padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: inline-block;
             border-left: 2px solid var(--moss); line-height: 1.3;
         }
@@ -132,6 +143,7 @@
             width: 100%; background: #000; display: none; flex-direction: column;
             border-bottom: 1px solid rgba(243, 206, 94, 0.2); z-index: 40;
             box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            flex-shrink: 0; /* Prevents the video box from collapsing */
         }
         .aspect-16-9 { width: 100%; aspect-ratio: 16 / 9; position: relative; max-height: 40vh; background: #050505; }
         
@@ -163,7 +175,7 @@
         @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
 
         /* --- Loading & Misc --- */
-        .typing-indicator { font-size: 11px; color: var(--firefly-dim); font-style: italic; padding: 0 24px; height: 16px; transition: opacity 0.3s; }
+        .typing-indicator { font-size: 11px; color: var(--firefly-dim); font-style: italic; padding: 0 24px; height: 16px; transition: opacity 0.3s; flex-shrink: 0; }
         .hidden { display: none !important; }
 
         @media (max-width: 640px) {
@@ -253,7 +265,7 @@
                 </div>
                 
                 <div class="flex items-end gap-3 relative">
-                    <textarea id="msg-input" rows="1" placeholder="Whisper into the void... (Emojis supported! 😊)" class="flex-1 garden-input py-3 px-4 resize-none min-h-[44px] max-h-32 leading-relaxed custom-scrollbar shadow-inner"></textarea>
+                    <textarea id="msg-input" rows="1" placeholder="Whisper into the void..." class="flex-1 garden-input py-3 px-4 resize-none min-h-[44px] max-h-32 leading-relaxed custom-scrollbar shadow-inner"></textarea>
                     
                     <button id="msg-send-btn" class="h-[44px] px-5 mb-[1px] shrink-0 flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-xl text-yellow-500 hover:from-yellow-500 hover:to-orange-500 hover:text-black hover:shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all font-medium text-sm">
                         <span>Send</span>
@@ -263,7 +275,7 @@
             </div>
         </footer>
 
-        <div id="side-menu" class="fixed inset-y-0 right-0 w-80 bg-[#020402]/95 backdrop-blur-2xl translate-x-full transition-transform duration-500 z-[110] shadow-[-10px_0_30px_rgba(0,0,0,0.8)] border-l border-white/5 flex flex-col">
+        <div id="side-menu" class="fixed inset-y-0 right-0 w-80 bg-[#050505]/95 backdrop-blur-2xl translate-x-full transition-transform duration-500 z-[110] shadow-[-10px_0_30px_rgba(0,0,0,0.8)] border-l border-white/5 flex flex-col">
             <div class="p-8 flex justify-between items-center border-b border-white/5">
                 <h3 class="majestic text-sm text-yellow-500 uppercase tracking-widest">Garden Paths</h3>
                 <button id="menu-close" class="text-gray-500 hover:text-white p-2 transition">
@@ -356,9 +368,9 @@
             const hues = [45, 120, 25, 270];
             const hue = hues[Math.abs(hash) % hues.length];
             return {
-                name: `hsl(${hue}, 70%, 60%)`,        // Natural accent
-                text: `hsl(${hue}, 20%, 92%)`,        // Whitish with 20% accent saturation
-                border: `hsla(${hue}, 70%, 60%, 0.4)`, // Suble side border tint
+                name: `hsl(${hue}, 70%, 60%)`,        
+                text: `hsl(${hue}, 20%, 92%)`,        
+                border: `hsla(${hue}, 70%, 60%, 0.4)`, 
                 glow: `hsla(${hue}, 70%, 60%, 0.15)`
             };
         };
@@ -367,7 +379,6 @@
         // 2. CRYPTOGRAPHY ENGINE (AES-256-CBC)
         // ==========================================
         const CryptoSys = {
-            // Buffer to Base64 (Using safe loop to prevent emoji 'Call Stack' breaks)
             bufToBase64: (buf) => {
                 const bytes = new Uint8Array(buf);
                 let binString = '';
@@ -376,7 +387,6 @@
                 }
                 return btoa(binString);
             },
-            // Base64 to Buffer
             base64ToBuf: (b64) => {
                 const binString = atob(b64);
                 const bytes = new Uint8Array(binString.length);
@@ -397,7 +407,6 @@
             async encrypt(text) {
                 if(!AppState.cryptoKey) throw new Error("Key missing");
                 const iv = crypto.getRandomValues(new Uint8Array(16));
-                // TextEncoder natively handles full UTF-8 emojis securely
                 const encrypted = await crypto.subtle.encrypt({ name: "AES-CBC", iv }, AppState.cryptoKey, new TextEncoder().encode(text));
                 return { ct: this.bufToBase64(encrypted), iv: this.bufToBase64(iv) };
             },
@@ -407,7 +416,6 @@
                     const iv = this.base64ToBuf(bundle.iv);
                     const ct = this.base64ToBuf(bundle.ct);
                     const decrypted = await crypto.subtle.decrypt({ name: "AES-CBC", iv }, AppState.cryptoKey, ct);
-                    // TextDecoder rebuilds the multi-byte emojis securely
                     return new TextDecoder().decode(decrypted);
                 } catch (e) {
                     console.error("Decryption failed", e);
@@ -437,7 +445,6 @@
                 AppState.replyTarget = { sender: msgObj.sender, text: msgObj.text };
                 document.getElementById('reply-context').classList.remove('hidden');
                 
-                // Truncate the preview text
                 const preview = msgObj.text.length > 30 ? msgObj.text.substring(0, 30) + '...' : msgObj.text;
                 document.getElementById('reply-target').innerHTML = `${msgObj.sender}: <span style="opacity:0.6; font-weight:normal">"${preview}"</span>`;
                 DOM.input.focus();
@@ -457,7 +464,6 @@
         // ==========================================
         const ChatEngine = {
             init() {
-                // Presence
                 const pRef = ref(db, `rooms/${AppState.room}/presence/${AppState.user}`);
                 const emojis = ['🌱', '🕯️', '🌿', '🌕', '🌑'];
                 set(pRef, { active: true, icon: emojis[Math.floor(Math.random()*emojis.length)] });
@@ -492,7 +498,6 @@
                     });
                 });
 
-                // Typing Sync
                 DOM.input.addEventListener('input', () => {
                     UI.autoResizeInput();
                     set(ref(db, `rooms/${AppState.room}/typing/${AppState.user}`), true);
@@ -513,7 +518,6 @@
                     }
                 });
 
-                // Messages 
                 const msgsRef = query(ref(db, `rooms/${AppState.room}/msgs`), limitToLast(50));
                 
                 let isFirstLoad = true;
@@ -524,7 +528,6 @@
                     await this.renderMessage(m);
                 });
 
-                // Listen for Truth or Dare vote updates
                 onChildChanged(msgsRef, async (snap) => {
                     const m = { id: snap.key, ...snap.val() };
                     if(m.votes) this.updateTDVotes(m.id, m.votes);
@@ -571,12 +574,10 @@
                     html += `<div class="msg-header"><span class="msg-sender" style="color: ${userTheme.name}; text-shadow: 0 0 8px ${userTheme.glow}">${m.sender}</span><span class="msg-ts">${time}</span></div>`;
                 }
 
-                // URL Links
                 let formattedText = text;
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
                 formattedText = formattedText.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-yellow-500 underline hover:text-yellow-300">${url}</a>`);
 
-                // Neon Name Mentions
                 AppState.knownUsers.forEach(knownUser => {
                     if(knownUser.length >= 2) { 
                         const safeName = knownUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -589,10 +590,8 @@
                     }
                 });
 
-                // Apply whitish tint, left padding, and border accent below sender
                 html += `<div class="msg-content" style="color: ${userTheme.text}; text-shadow: 0 0 5px ${userTheme.glow}; padding-left: 12px; margin-left: 4px; border-left: 2px solid ${userTheme.border};">`;
                 
-                // Reply Block
                 if(m.reply) {
                     const replyText = typeof m.reply === 'object' ? m.reply.text : "[Encrypted Log]";
                     const replySender = typeof m.reply === 'object' ? m.reply.sender : m.reply;
@@ -603,7 +602,6 @@
                 
                 html += `<span>${formattedText}</span>`;
 
-                // Game Logic (Truth or Dare)
                 if(text.includes("T or D?") || text.includes("t or d") || text.includes("T or d") || text.includes("T or D")) {
                     html += `
                         <div class="td-module">

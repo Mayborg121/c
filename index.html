@@ -14,15 +14,14 @@
     
     <style>
         :root {
-            /* Removed the greenish tints, replaced with deep dark night/shadow tones */
-            --forest-bg: #050505; 
-            --forest-light: #121212; 
+            var(--forest-bg): #111111; 
+            var(--forest-light): #1a1a1a; 
             --forest-accent: #1a1a1a;
             --firefly: #f3ce5e;
             --firefly-dim: #c9a53b;
             --text-warm: #f2ebd9;
             --text-dim: #999999;
-            --moss: #4a4a4a; /* Replaced moss green with slate grey */
+            --moss: #4a4a4a; 
             --danger: #8a2e2e;
             --line-h: 1.2;
         }
@@ -36,9 +35,11 @@
         
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background-color: var(--forest-bg); color: var(--text-warm);
+            background-color: #111111; /* Solid grayish black */
+            color: var(--text-warm);
             font-family: 'Inter', sans-serif; 
-            overflow: hidden; /* Prevents entire page from scrolling */
+            overflow: hidden; 
+            position: fixed; /* Completely locks the viewport from mobile jumping */
         }
 
         .majestic { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
@@ -47,7 +48,7 @@
         /* --- Background Effects --- */
         #garden-canvas {
             position: fixed; inset: 0; z-index: 1; pointer-events: none;
-            background: radial-gradient(circle at 50% 50%, var(--forest-light) 0%, var(--forest-bg) 100%);
+            background-color: #111111; /* Removed gradient, solid dark gray */
             overflow: hidden;
         }
         .firefly {
@@ -58,7 +59,7 @@
         }
         .mist {
             position: absolute; bottom: 0; left: 0; right: 0; height: 50vh;
-            background: linear-gradient(to top, rgba(5,5,5,0.95), transparent);
+            background: linear-gradient(to top, rgba(17,17,17,0.95), transparent); /* Matches new background */
             pointer-events: none; z-index: 2;
         }
         @keyframes drift {
@@ -74,12 +75,13 @@
             flex-direction: column; 
             height: 100dvh; 
             width: 100%; 
-            position: relative; 
+            position: fixed; /* Locks the master container */
+            inset: 0;
             z-index: 10; 
-            overflow: hidden; /* Locks the master container */
+            overflow: hidden; 
         }
         .glass-panel { 
-            background: rgba(5, 5, 5, 0.75); 
+            background: rgba(17, 17, 17, 0.75); 
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); 
         }
 
@@ -465,7 +467,7 @@
         const ChatEngine = {
             init() {
                 const pRef = ref(db, `rooms/${AppState.room}/presence/${AppState.user}`);
-                const emojis = ['🌱', '🕯️', '🌿', '🌕', '🌑'];
+                const emojis = ['🌕', '🌑','😇','🌷','🌺','🌾'];
                 set(pRef, { active: true, icon: emojis[Math.floor(Math.random()*emojis.length)] });
                 onDisconnect(pRef).remove();
 
@@ -555,6 +557,19 @@
                 const time = m.ts ? new Date(m.ts).toLocaleTimeString([], {hour12:true, hour:'numeric', minute:'2-digit'}) : 'Now';
                 
                 AppState.knownUsers.add(m.sender);
+
+                // Push Notification for "Heyy"
+                if (m.sender !== AppState.user && text.trim().toLowerCase() === 'heyy') {
+                    const msgTime = m.ts || Date.now();
+                    // Prevent notifications for old history messages loaded on startup (10 second limit)
+                    if (Date.now() - msgTime < 10000) {
+                        if ("Notification" in window && Notification.permission === "granted") {
+                            new Notification("Eternal Garden", {
+                                body: `${m.sender} says Heyy!`,
+                            });
+                        }
+                    }
+                }
 
                 const div = document.createElement('div');
                 div.className = 'msg-container';
@@ -802,6 +817,12 @@
                 localStorage.setItem('garden_auth', JSON.stringify({u, r, p}));
                 
                 document.getElementById('auth-gate').style.opacity = '0';
+                
+                // Request Notification Permission on Entry
+                if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
+
                 setTimeout(() => {
                     document.getElementById('auth-gate').style.display = 'none';
                     document.getElementById('app-root').classList.remove('hidden');

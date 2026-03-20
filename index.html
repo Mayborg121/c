@@ -35,7 +35,7 @@
         
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background-color: #111111; /* Solid grayish black */
+            background-color: #0c0c0c; /* Solid grayish black */
             color: var(--text-warm);
             font-family: 'Inter', sans-serif; 
             overflow: hidden; 
@@ -59,7 +59,7 @@
         }
         .mist {
             position: absolute; bottom: 0; left: 0; right: 0; height: 50vh;
-            background: linear-gradient(to top, rgba(17,17,17,0.95), transparent); /* Matches new background */
+            background:  rgba(19, 19, 19, 0.844); /* Matches new background */
             pointer-events: none; z-index: 2;
         }
         @keyframes drift {
@@ -559,7 +559,7 @@
                 AppState.knownUsers.add(m.sender);
 
                 // Push Notification for "Heyy"
-                if (m.sender !== AppState.user && text.trim().toLowerCase() === 'heyy') {
+                if (m.sender !== AppState.user && text.trim().toLowerCase() === 'hey') {
                     const msgTime = m.ts || Date.now();
                     // Prevent notifications for old history messages loaded on startup (10 second limit)
                     if (Date.now() - msgTime < 10000) {

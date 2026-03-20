@@ -59,11 +59,7 @@
             box-shadow: 0 0 6px var(--firefly), 0 0 12px var(--firefly);
             animation: drift var(--d) infinite ease-in-out;
         }
-        .mist {
-            position: absolute; bottom: 0; left: 0; right: 0; height: 50vh;
-            background: linear-gradient(to top, rgba(13,13,13,1), transparent); /* Matches 5% gray */
-            pointer-events: none; z-index: 2;
-        }
+    
         @keyframes drift {
             0% { transform: translate(0, 0) scale(0); opacity: 0; }
             20% { opacity: 0.8; }

@@ -113,18 +113,23 @@
             border-left: 2px solid var(--moss); line-height: 1.3;
         }
 
-        /* --- Media Styles --- */
+        /* --- Media Styles (Images & GIFs) --- */
         .chat-media-wrapper {
             max-width: 250px;
+            max-height: 200px; /* Snaps tall images to 200px */
             border-radius: 8px;
             overflow: hidden;
             border: 1px solid rgba(255,255,255,0.1);
             margin-top: 4px;
-            cursor: pointer;
+            cursor: zoom-in;
             transition: transform 0.2s;
         }
         .chat-media-wrapper:hover { transform: scale(1.02); border-color: var(--firefly); }
-        .chat-media-wrapper img { width: 100%; height: auto; display: block; }
+        .chat-media-wrapper img { width: 100%; height: 100%; max-height: 200px; object-fit: cover; display: block; }
+
+        /* Fullscreen Image Viewer */
+        #enlarge-modal { z-index: 3000; }
+        #enlarge-modal img { max-width: 95vw; max-height: 85vh; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
 
         /* --- Truth or Dare Module --- */
         .td-module {
@@ -206,6 +211,10 @@
     <div id="garden-canvas"><div class="mist"></div></div>
 
     <div id="toast-container"></div>
+
+    <div id="enlarge-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md flex justify-center items-center p-4 cursor-zoom-out transition-opacity z-[3000]">
+        <img id="enlarged-img" src="" alt="Enlarged media">
+    </div>
     
     <div id="floating-relic" class="hidden absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a]/95 border border-yellow-500/30 rounded-full px-6 py-2 cursor-pointer hover:bg-[#2a2a2a] hover:scale-105 transition-all shadow-[0_0_20px_rgba(243,206,94,0.2)] flex items-center gap-2 group">
         <svg class="w-4 h-4 text-yellow-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
@@ -440,7 +449,19 @@
             ctxMenu: document.getElementById('context-menu'),
             floatingRelic: document.getElementById('floating-relic'),
             plusBtn: document.getElementById('plus-btn'),
-            plusMenu: document.getElementById('plus-menu')
+            plusMenu: document.getElementById('plus-menu'),
+            enlargeModal: document.getElementById('enlarge-modal'),
+            enlargedImg: document.getElementById('enlarged-img')
+        };
+
+        // Make modal globally accessible for inline onclick handlers
+        window.showEnlargedImage = (url) => {
+            DOM.enlargedImg.src = url;
+            DOM.enlargeModal.classList.remove('hidden');
+        };
+
+        DOM.enlargeModal.onclick = () => {
+            DOM.enlargeModal.classList.add('hidden');
         };
 
         // ==========================================
@@ -451,7 +472,7 @@
             for (let i = 0; i < name.length; i++) {
                 hash = name.charCodeAt(i) + ((hash << 5) - hash);
             }
-            const hues = [330, 120, 35, 250];
+            const hues = [330, 120, 35, 190];
             const hue = hues[Math.abs(hash) % hues.length];
             return {
                 name: `hsl(${hue}, 70%, 60%)`,        
@@ -530,7 +551,6 @@
                 AppState.replyTarget = { sender: msgObj.sender, text: msgObj.text };
                 document.getElementById('reply-context').classList.remove('hidden');
                 
-                // Don't show raw media tags in reply banner
                 let preview = msgObj.text;
                 if(preview.startsWith('[MEDIA]')) preview = "📷 Image / GIF";
                 preview = preview.length > 30 ? preview.substring(0, 30) + '...' : preview;
@@ -570,7 +590,7 @@
                     if (reason === 'gift') {
                         UI.toast(`${user} gifted ${Math.abs(amount)} fireflies to ${target}`);
                     } else if (reason === 'robbed' || reason === 'rob_fail' || reason === 'gamble_wager') {
-                        // Silent or custom handling could go here
+                        // Silent
                     } else {
                         if (amount > 0) UI.toast(`${user} +${amount}`);
                         if (amount < 0) UI.toast(`${user} ${amount}`); 
@@ -718,7 +738,6 @@
         // ==========================================
         const FileEngine = {
             init() {
-                // Image Upload Trigger
                 document.getElementById('menu-upload-img').onclick = () => {
                     DOM.plusMenu.classList.add('hidden');
                     document.getElementById('img-upload-input').click();
@@ -728,7 +747,6 @@
                     if(e.target.files.length > 0) this.uploadToSupabase(e.target.files[0]);
                 };
 
-                // GIF Search Trigger
                 document.getElementById('menu-search-gif').onclick = () => {
                     DOM.plusMenu.classList.add('hidden');
                     document.getElementById('gif-modal').classList.remove('hidden');
@@ -758,12 +776,11 @@
 
                 UI.toast("Uploading to S3 Bucket...");
                 
-                // Clean filename
                 const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
                 const fileName = `chat_${Date.now()}_${safeName}`;
 
                 s3.putObject({
-                    Bucket: 'garden_media', // YOUR BUCKET NAME
+                    Bucket: 'garden_media',
                     Key: fileName,
                     Body: file,
                     ContentType: file.type,
@@ -773,7 +790,6 @@
                         console.error(err);
                         UI.toast("Upload failed. Ensure bucket exists and is public.");
                     } else {
-                        // Construct the public URL for Supabase
                         const publicUrl = `https://hmxjcfibohehvcukpkpn.supabase.co/storage/v1/object/public/garden_media/${fileName}`;
                         ChatEngine.sendMedia(publicUrl);
                     }
@@ -890,7 +906,6 @@
                             const textSpan = textSpans[textSpans.length - 1]; 
                             
                             if (textSpan) {
-                                // Do not format media edits as text
                                 if(newText.startsWith('[MEDIA]')) return; 
 
                                 let formattedText = newText;
@@ -1059,7 +1074,7 @@
                 // MEDIA RENDERING
                 if (text.startsWith('[MEDIA]')) {
                     const mediaUrl = text.replace('[MEDIA]', '');
-                    html += `<div class="chat-media-wrapper" onclick="window.open('${mediaUrl}', '_blank')"><img src="${mediaUrl}" alt="media" loading="lazy"></div>`;
+                    html += `<div class="chat-media-wrapper" onclick="window.showEnlargedImage('${mediaUrl}')"><img src="${mediaUrl}" alt="media" loading="lazy"></div>`;
                 } 
                 // STANDARD TEXT RENDERING
                 else {
@@ -1112,7 +1127,6 @@
                 // --- LONG PRESS TO EDIT ---
                 let pressTimer;
                 const startPress = (e) => {
-                    // Prevent editing Oracle messages or Media
                     if (m.sender !== AppState.user || m.sender === 'Oracle' || text.startsWith('[MEDIA]')) return; 
                     pressTimer = setTimeout(() => {
                         AppState.editingMsgId = m.id;
@@ -1139,7 +1153,6 @@
                     AppState.contextMsgId = m.id;
                     AppState.contextRawText = div.dataset.rawText || text;
 
-                    // Disable Edit button in menu if it's media
                     const editBtn = document.getElementById('ctx-edit');
                     if (text.startsWith('[MEDIA]')) {
                         editBtn.style.display = 'none';
@@ -1314,9 +1327,22 @@
             DOM.plusMenu.classList.toggle('hidden');
         };
 
+        // Global Background Clicks
         document.addEventListener('click', (e) => {
+            // Hide Context Menus
             if (!e.target.closest('#context-menu')) DOM.ctxMenu.classList.add('hidden');
             if (!e.target.closest('#plus-menu') && e.target !== DOM.plusBtn) DOM.plusMenu.classList.add('hidden');
+            
+            // Cancel Edit Mode if clicking outside chat input elements
+            if (AppState.editingMsgId) {
+                if (!e.target.closest('.msg-container') && !e.target.closest('footer') && !e.target.closest('#context-menu')) {
+                    AppState.editingMsgId = null;
+                    DOM.input.value = '';
+                    UI.autoResizeInput();
+                    UI.clearReply();
+                    UI.toast("Edit cancelled.");
+                }
+            }
         });
 
         document.getElementById('ctx-edit').onclick = () => {
@@ -1330,10 +1356,23 @@
             }
         };
 
+        // Advanced Delete (Checks for S3 Storage clearing)
         document.getElementById('ctx-delete').onclick = () => {
             DOM.ctxMenu.classList.add('hidden');
             if(AppState.contextMsgId) {
                 if(confirm("Erase this echo permanently?")) {
+                    
+                    // Clear from Supabase Storage if it's an uploaded media file
+                    if (AppState.contextRawText && AppState.contextRawText.startsWith('[MEDIA]')) {
+                        const url = AppState.contextRawText.replace('[MEDIA]', '');
+                        if (url.includes('garden_media/')) {
+                            const key = url.split('garden_media/')[1];
+                            s3.deleteObject({ Bucket: 'garden_media', Key: key }, (err, data) => {
+                                if(err) console.error("S3 Delete Error:", err);
+                            });
+                        }
+                    }
+
                     remove(ref(db, `rooms/${AppState.room}/msgs/${AppState.contextMsgId}`));
                     UI.toast("Echo erased.");
                 }

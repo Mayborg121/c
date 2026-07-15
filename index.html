@@ -9,12 +9,10 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            /* 5% solid blackish gray */
             --forest-bg: #0d0d0d; 
             --forest-accent: #1a1a1a;
             --firefly: #f3ce5e;
@@ -40,9 +38,9 @@
             color: var(--text-warm);
             font-family: 'Inter', sans-serif; 
             overflow: hidden; 
-            position: fixed; /* Completely locks the viewport from mobile jumping */
+            position: fixed; 
             top: 0; left: 0; right: 0; bottom: 0;
-            touch-action: none; /* Disables native pull-to-refresh and window scrolling */
+            touch-action: none; 
         }
 
         .majestic { font-family: 'Cinzel', serif; letter-spacing: 0.15em; }
@@ -51,7 +49,7 @@
         /* --- Background Effects --- */
         #garden-canvas {
             position: absolute; inset: 0; z-index: 1; pointer-events: none;
-            background: var(--forest-bg); /* Uniform 5% gray, no gradients */
+            background: var(--forest-bg); 
             overflow: hidden;
         }
         .firefly {
@@ -72,27 +70,25 @@
         #app-root { 
             display: flex; 
             flex-direction: column; 
-            position: absolute; /* Anchors inside the fixed body */
+            position: absolute; 
             inset: 0;
             z-index: 10; 
             overflow: hidden; 
         }
-        .glass-panel { 
-            background: rgba(13, 13, 13, 0.75);  
-        }
+        .glass-panel { background: rgba(13, 13, 13, 0.75); }
 
         /* --- Chat UI --- */
         #chat-scroller {
-            touch-action: auto; /* Re-enables touch scrolling ONLY for the chat window */
+            touch-action: auto; 
             -webkit-overflow-scrolling: touch;
         }
         .msg-container {
             display: flex; flex-direction: column; gap: 4px; padding: 0px 24px;
             transition: background 0.2s; border-radius: 8px; margin: 1px 8px;
-            flex-shrink: 0; /* Prevents flexbox from squishing messages */
+            flex-shrink: 0; 
         }
         .msg-container:hover { background: rgba(243, 206, 94, 0.02); }
-        .msg-container.new-sender { margin-top: 20px; } 
+        .msg-container.new-sender { margin-top: 10px; } 
         
         .msg-header { display: flex; align-items: baseline; gap: 5px; margin-bottom: 2px; }
         .msg-sender { font-size: 13px; font-weight: 600; text-transform: capitalize; }
@@ -145,7 +141,7 @@
             width: 100%; background: #000; display: none; flex-direction: column;
             border-bottom: 1px solid rgba(243, 206, 94, 0.2); z-index: 40;
             box-shadow: 0 4px 20px rgba(0,0,0,0.8);
-            flex-shrink: 0; /* Prevents the video box from collapsing */
+            flex-shrink: 0;
         }
         .aspect-16-9 { width: 100%; aspect-ratio: 16 / 9; position: relative; max-height: 40vh; background: var(--forest-bg); }
         
@@ -166,7 +162,7 @@
         
         .media-title { font-size: 12px; color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px black; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
 
-        /* --- Toast Notifications --- */
+        /* --- Toast Notifications & Context Menu --- */
         #toast-container { position: fixed; top: 70px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .toast {
             background: var(--forest-accent); border-left: 3px solid var(--firefly); color: var(--text-warm);
@@ -182,7 +178,7 @@
 
         @media (max-width: 640px) {
             .msg-container { padding: 0px 12px; }
-            #side-menu { width: 100%; }
+            #side-menu { width: 100%; box-shadow: none;}
         }
     </style>
 </head>
@@ -191,6 +187,16 @@
     <div id="garden-canvas"><div class="mist"></div></div>
 
     <div id="toast-container"></div>
+    
+    <div id="floating-relic" class="hidden absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a]/95 border border-yellow-500/30 rounded-full px-6 py-2 cursor-pointer hover:bg-[#2a2a2a] hover:scale-105 transition-all shadow-[0_0_20px_rgba(243,206,94,0.2)] flex items-center gap-2 group">
+        <svg class="w-4 h-4 text-yellow-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+        <span class="text-[10px] text-yellow-500 uppercase tracking-widest font-bold group-hover:text-yellow-300">Harvest Relic</span>
+    </div>
+
+    <div id="context-menu" class="hidden fixed z-[1000] bg-[#1a1a1a]/95 border border-white/10 rounded shadow-[0_4px_20px_rgba(0,0,0,0.8)] py-1 w-32 backdrop-blur-md">
+        <button id="ctx-edit" class="w-full text-left px-4 py-2 text-[11px] uppercase tracking-wider text-yellow-500 hover:bg-white/5 transition">Edit Whisper</button>
+        <button id="ctx-delete" class="w-full text-left px-4 py-2 text-[11px] uppercase tracking-wider text-red-500 hover:bg-white/5 transition border-t border-white/5 mt-1 pt-2">Sever Echo</button>
+    </div>
 
     <div id="auth-gate" class="fixed inset-0 z-[100] flex items-center justify-center glass-panel px-6 transition-opacity duration-500">
         <div class="w-full max-w-sm space-y-10 text-center relative z-10">
@@ -221,8 +227,7 @@
         
         <header class="h-16 flex items-center justify-between px-6 glass-panel border-b border-white/5 shrink-0 z-50">
             <div class="flex items-center gap-4">
-                <div id="presence-list" class="flex flex-wrap items-center gap-2">
-                    </div>
+                <div id="presence-list" class="flex flex-wrap items-center gap-2"></div>
                 <div class="h-4 w-[1px] bg-white/10 mx-2 hidden sm:block"></div>
                 <div class="flex flex-col hidden sm:flex">
                     <span class="majestic text-[10px] text-yellow-500 tracking-[0.4em]">Eternal Garden</span>
@@ -244,28 +249,22 @@
                         Silence
                     </button>
                 </div>
-
-                <div id="yt-player-container" class="w-full h-full hidden pointer-events-none sm:pointer-events-auto">
-                    <div id="yt-player-frame" class="w-full h-full"></div>
-                </div>
                 <video id="p2p-local-vid" class="w-full h-full hidden object-contain" playsinline controls></video>
             </div>
         </div>
 
         <main id="chat-scroller" class="flex-1 overflow-y-auto py-4 flex flex-col scroll-smooth">
             <div class="sys-msg mt-auto">The garden awakens. Messages are heavily encrypted.</div>
-            </main>
+        </main>
         
         <div id="typing-status" class="typing-indicator opacity-0">Someone is whispering...</div>
 
         <footer class="p-4 glass-panel border-t border-white/5 shrink-0 z-50">
             <div class="max-w-5xl mx-auto relative">
-                
                 <div id="reply-context" class="hidden absolute -top-9 left-3 right-15 flex items-center justify-between text-[11px] text-yellow-600 bg-black/80 px-4 mr-4 py-1.5 rounded-t-md border border-white/10 border-b-0 backdrop-blur-md">
                     <span>Replying to <span id="reply-target" class="font-bold"></span></span>
                     <button id="reply-clear" class="hover:text-white transition p-1">✕</button>
                 </div>
-                
                 <div class="flex items-end gap-3 relative">
                     <textarea id="msg-input" rows="1" placeholder="Whisper into the void..." class="flex-1 garden-input py-3 px-4 resize-none min-h-[44px] max-h-32 leading-relaxed custom-scrollbar shadow-inner"></textarea>
                     
@@ -285,33 +284,47 @@
                 </button>
             </div>
             
-            <nav class="flex-1 p-8 space-y-8 overflow-y-auto">
+            <nav class="flex-1 px-8 py-4 space-y-6 overflow-y-auto">
                 <div class="group cursor-pointer" id="opt-host-local">
                     <div class="flex items-center gap-3 text-yellow-600 group-hover:text-yellow-400 transition-colors mb-1">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         <span class="text-xs tracking-[0.2em] uppercase font-light">Host Local Video</span>
                     </div>
-                    <span class="text-[10px] text-gray-500 block ml-8">Stream .mp4 files directly via Peer-to-Peer WebRTC. No server limits.</span>
+                    <span class="text-[10px] text-gray-500 block ml-8">Stream .mp4 files directly via WebRTC.</span>
                 </div>
 
-                <div class="group cursor-pointer" id="opt-host-yt">
+                <div class="group cursor-pointer" id="opt-host-relic">
                     <div class="flex items-center gap-3 text-yellow-600 group-hover:text-yellow-400 transition-colors mb-1">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span class="text-xs tracking-[0.2em] uppercase font-light">Play YouTube</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-xs tracking-[0.2em] uppercase font-light">Ancient Relic</span>
                     </div>
-                    <span class="text-[10px] text-gray-500 block ml-8">Paste a URL. Synchronizes play/pause across all active members.</span>
+                    <span class="text-[10px] text-gray-500 block ml-8">Reveal the decoy relic to harvest fireflies.</span>
                 </div>
 
-                <div class="group cursor-pointer mt-12 pt-8 border-t border-white/5" id="opt-purge">
+                <div class="group cursor-pointer pt-6 border-t border-white/5" id="opt-purge">
                     <div class="flex items-center gap-3 text-red-800 group-hover:text-red-500 transition-colors mb-1">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         <span class="text-xs tracking-[0.2em] uppercase font-light">Purge Echoes</span>
                     </div>
-                    <span class="text-[10px] text-gray-500 block ml-8">Permanently delete all logs from the database.</span>
+                    <span class="text-[10px] text-gray-500 block ml-8">Permanently delete all chat logs.</span>
+                </div>
+
+                <div class="mt-8 border-t border-white/5 pt-6 pb-4">
+                    <h4 class="text-[10px] text-yellow-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Mystic Commands
+                    </h4>
+                    <ul class="text-[10px] text-gray-400 space-y-3 font-mono leading-relaxed ml-2">
+                        <li><span class="text-yellow-500 font-bold">/points</span> <span class="opacity-60">[user]</span><br>Check firefly balance.</li>
+                        <li><span class="text-yellow-500 font-bold">/gamble</span> <span class="opacity-60">[amt|all]</span><br>Risk fireflies to win big.</li>
+                        <li><span class="text-yellow-500 font-bold">/gift</span> <span class="opacity-60">[user] [amt]</span><br>Transfer fireflies to an ally.</li>
+                        <li><span class="text-yellow-500 font-bold">/rob</span> <span class="opacity-60">[user]</span><br>Attempt to steal fireflies.</li>
+                        <li><span class="text-yellow-500 font-bold">/top</span><br>View the wealthiest spirits.</li>
+                    </ul>
                 </div>
             </nav>
 
-            <div class="p-8 border-t border-white/5">
+            <div class="p-8 border-t border-white/5 shrink-0">
                 <button id="opt-logout" class="w-full py-3 bg-white/5 hover:bg-white/10 text-xs tracking-widest uppercase text-gray-400 hover:text-white transition rounded mb-6">
                     Leave Garden
                 </button>
@@ -326,7 +339,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-        import { getDatabase, ref, push, set, onChildAdded, onChildChanged, onValue, remove, onDisconnect, serverTimestamp, query, limitToLast, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+        import { getDatabase, ref, push, set, update, onChildAdded, onChildChanged, onChildRemoved, onValue, remove, onDisconnect, serverTimestamp, query, limitToLast, get, runTransaction } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
         // ==========================================
         // 1. ARCHITECTURE CONFIGURATION
@@ -346,28 +359,33 @@
             replyTarget: null,       
             knownUsers: new Set(),   
             peer: null, connectedPeers: new Set(),
-            ytPlayer: null, ytReady: false, isHost: false,
+            isHost: false,
             lastMsgSender: null,
-            typingTimeout: null
+            lastMsgTime: null,
+            typingTimeout: null,
+            editingMsgId: null,
+            contextMsgId: null,      
+            contextRawText: null     
         };
 
         const DOM = {
             scroller: document.getElementById('chat-scroller'),
             input: document.getElementById('msg-input'),
             sendBtn: document.getElementById('msg-send-btn'),
-            typingStatus: document.getElementById('typing-status')
+            typingStatus: document.getElementById('typing-status'),
+            ctxMenu: document.getElementById('context-menu'),
+            floatingRelic: document.getElementById('floating-relic')
         };
 
         // ==========================================
-        // 1.5. USER COLOR GENERATOR (Natural Palette)
+        // 1.5. USER COLOR GENERATOR
         // ==========================================
         const getUserColor = (name) => {
             let hash = 0;
             for (let i = 0; i < name.length; i++) {
                 hash = name.charCodeAt(i) + ((hash << 5) - hash);
             }
-            // Hues: Yellow(~45), Green(~120), Orange(~25), Violet(~270)
-            const hues = [45, 120, 25, 270];
+            const hues = [330, 120, 35, 250];
             const hue = hues[Math.abs(hash) % hues.length];
             return {
                 name: `hsl(${hue}, 70%, 60%)`,        
@@ -375,10 +393,10 @@
                 border: `hsla(${hue}, 70%, 60%, 0.4)`, 
                 glow: `hsla(${hue}, 70%, 60%, 0.15)`
             };
-        };
+        }; 
 
         // ==========================================
-        // 2. CRYPTOGRAPHY ENGINE (AES-256-CBC)
+        // 2. CRYPTOGRAPHY ENGINE
         // ==========================================
         const CryptoSys = {
             bufToBase64: (buf) => {
@@ -397,7 +415,6 @@
                 }
                 return bytes.buffer;
             },
-            
             async deriveKey(password, saltStr) {
                 const enc = new TextEncoder();
                 const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
@@ -446,7 +463,6 @@
             setReply(msgObj) {
                 AppState.replyTarget = { sender: msgObj.sender, text: msgObj.text };
                 document.getElementById('reply-context').classList.remove('hidden');
-                
                 const preview = msgObj.text.length > 30 ? msgObj.text.substring(0, 30) + '...' : msgObj.text;
                 document.getElementById('reply-target').innerHTML = `${msgObj.sender}: <span style="opacity:0.6; font-weight:normal">"${preview}"</span>`;
                 DOM.input.focus();
@@ -458,6 +474,177 @@
             autoResizeInput() {
                 DOM.input.style.height = 'auto';
                 DOM.input.style.height = (DOM.input.scrollHeight) + 'px';
+            }
+        };
+
+        // ==========================================
+        // 3.5 TEXT RPG / GAME ENGINE
+        // ==========================================
+        const GameEngine = {
+            init() {
+                // Passive Firefly Generation: 50 points every minute
+                setInterval(() => {
+                    if (AppState.room && AppState.user) {
+                        this.addPoints(AppState.user, 50, 'passive');
+                    }
+                }, 60000);
+            },
+            
+            async addPoints(user, amount, reason = '', target = '') {
+                const pRef = ref(db, `rooms/${AppState.room}/points/${user}`);
+                runTransaction(pRef, (current) => {
+                    return (current || 0) + amount;
+                });
+
+                // Toast Handling matching exact user request format
+                if (user === AppState.user) {
+                    if (reason === 'gift') {
+                        UI.toast(`${user} gifted ${Math.abs(amount)} fireflies to ${target}`);
+                    } else if (reason === 'robbed') {
+                        UI.toast(`${user} -${Math.abs(amount)}`);
+                    } else {
+                        if (amount > 0) UI.toast(`${user} +${amount}`);
+                        if (amount < 0) UI.toast(`${user} ${amount}`); // amount is already negative
+                    }
+                }
+            },
+            
+            async getPoints(user) {
+                const snap = await get(ref(db, `rooms/${AppState.room}/points/${user}`));
+                return snap.val() || 0;
+            },
+            
+            async oracleSpeak(text) {
+                const bundle = await CryptoSys.encrypt(text);
+                await push(ref(db, `rooms/${AppState.room}/msgs`), {
+                    sender: 'Oracle', payload: bundle,
+                    ts: serverTimestamp(), reply: null
+                });
+            },
+            
+            async processCommand(val) {
+                const args = val.trim().split(/\s+/);
+                const cmd = args[0].toLowerCase();
+
+                if (cmd === '/points') {
+                    const target = args[1] || AppState.user;
+                    const pts = await this.getPoints(target);
+                    await this.oracleSpeak(`The unseen ledgers show that ${target} holds ${pts} fireflies.`);
+                    return true;
+                }
+                
+                if (cmd === '/top') {
+                    const snap = await get(ref(db, `rooms/${AppState.room}/points`));
+                    const data = snap.val();
+                    if (!data) {
+                        await this.oracleSpeak("The forest is empty. No fireflies gathered yet.");
+                        return true;
+                    }
+                    
+                    const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 3);
+                    let msg = "👑 The Wealthiest Spirits 👑\n";
+                    sorted.forEach((p, i) => {
+                        msg += `${i+1}. ${p[0]} : ${p[1]} fireflies\n`;
+                    });
+                    await this.oracleSpeak(msg.trim());
+                    return true;
+                }
+
+                if (cmd === '/gift') {
+                    const target = args[1];
+                    const amount = parseInt(args[2]);
+                    if (!target || isNaN(amount) || amount <= 0) {
+                        UI.toast("Usage: /gift [username] [amount]");
+                        return true;
+                    }
+                    if (target === AppState.user) {
+                        UI.toast("You cannot gift yourself.");
+                        return true;
+                    }
+                    const myPts = await this.getPoints(AppState.user);
+                    if (myPts < amount) {
+                        await this.oracleSpeak(`Illusion shatters. ${AppState.user} lacks the fireflies to grant ${amount}.`);
+                        return true;
+                    }
+                    await this.addPoints(AppState.user, -amount, 'gift', target);
+                    await this.addPoints(target, amount); // Receiver silently gets it, they will see it if they type /points
+                    await this.oracleSpeak(`A light passes in the dark. ${AppState.user} bestowed ${amount} fireflies to ${target}.`);
+                    return true;
+                }
+
+                if (cmd === '/rob') {
+                    const target = args[1];
+                    if (!target) { UI.toast("Usage: /rob [username]"); return true; }
+                    if (target === AppState.user) return true;
+                    
+                    const myPts = await this.getPoints(AppState.user);
+                    const targetPts = await this.getPoints(target);
+                    
+                    if (myPts < 50) { await this.oracleSpeak(`You need at least 50 fireflies to risk a robbery, ${AppState.user}.`); return true; }
+                    if (targetPts < 50) { await this.oracleSpeak(`${target} has too few fireflies. Have mercy, ${AppState.user}.`); return true; }
+
+                    const roll = Math.random();
+                    if (roll > 0.5) {
+                        // Success
+                        const stolen = Math.floor(Math.random() * (targetPts * 0.3)) + 10;
+                        await this.addPoints(target, -stolen);
+                        await this.addPoints(AppState.user, stolen, 'rob_win');
+                        await this.oracleSpeak(`Shadows mask the deed. ${AppState.user} stole ${stolen} fireflies from ${target}!`);
+                    } else {
+                        // Fail
+                        const penalty = 50;
+                        await this.addPoints(AppState.user, -penalty, 'rob_fail');
+                        await this.addPoints(target, penalty);
+                        await this.oracleSpeak(`The light exposes the thief! ${AppState.user} was caught and paid a ${penalty} firefly fine to ${target}.`);
+                    }
+                    return true;
+                }
+
+                if (cmd === '/gamble') {
+                    const amountStr = args[1];
+                    const myPts = await this.getPoints(AppState.user);
+                    let amount = parseInt(amountStr);
+                    
+                    if (amountStr === 'all') amount = myPts;
+
+                    if (isNaN(amount) || amount <= 0) {
+                        UI.toast("Usage: /gamble [amount]");
+                        return true;
+                    }
+                    if (myPts < amount) {
+                        await this.oracleSpeak(`${AppState.user} reaches for ghosts. They lack ${amount} fireflies.`);
+                        return true;
+                    }
+
+                    // Deduct wager immediately
+                    await this.addPoints(AppState.user, -amount, 'gamble_wager');
+
+                    const roll = Math.random();
+                    let winnings, msg;
+
+                    if (roll < 0.45) {
+                        winnings = 0;
+                        msg = `The void consumes the wager. ${AppState.user} lost ${amount} fireflies.`;
+                    } else if (roll < 0.65) {
+                        winnings = Math.floor(amount * 0.1);
+                        msg = `A harsh toll is exacted. ${AppState.user} salvaged only 10% (${winnings} fireflies).`;
+                    } else if (roll < 0.90) {
+                        winnings = amount * 2;
+                        msg = `The Fates smile! ${AppState.user} DOUBLED their wager to ${winnings} fireflies!`;
+                    } else {
+                        winnings = amount * 3;
+                        msg = `A celestial surge! ${AppState.user} TRIPLED their wager to ${winnings} fireflies!!!`;
+                    }
+
+                    if (winnings > 0) {
+                        await this.addPoints(AppState.user, winnings, 'gamble_win');
+                    }
+                    
+                    await this.oracleSpeak(msg);
+                    return true;
+                }
+                
+                return false; 
             }
         };
 
@@ -475,10 +662,9 @@
                     const list = document.getElementById('presence-list');
                     list.innerHTML = '';
                     snap.forEach(s => {
-                        AppState.knownUsers.add(s.key); 
+                        if (s.key !== 'Oracle') AppState.knownUsers.add(s.key); 
                         
                         const userTheme = getUserColor(s.key);
-                        
                         const pill = document.createElement('div');
                         pill.className = 'flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full';
                         
@@ -521,7 +707,6 @@
                 });
 
                 const msgsRef = query(ref(db, `rooms/${AppState.room}/msgs`), limitToLast(50));
-                
                 let isFirstLoad = true;
                 
                 onChildAdded(msgsRef, async (snap) => {
@@ -533,13 +718,100 @@
                 onChildChanged(msgsRef, async (snap) => {
                     const m = { id: snap.key, ...snap.val() };
                     if(m.votes) this.updateTDVotes(m.id, m.votes);
+
+                    const msgDiv = document.getElementById(`msg-${m.id}`);
+                    if (msgDiv && m.edited) {
+                        const newText = await CryptoSys.decrypt(m.payload);
+                        msgDiv.dataset.rawText = newText;
+                        
+                        const contentContainer = msgDiv.querySelector('.msg-content');
+                        if (contentContainer) {
+                            const textSpans = contentContainer.querySelectorAll('span');
+                            const textSpan = textSpans[textSpans.length - 1]; 
+                            
+                            if (textSpan) {
+                                let formattedText = newText;
+                                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                                formattedText = formattedText.replace(urlRegex, url => `<a href="${url}" target="_blank" class="text-yellow-500 underline hover:text-yellow-300">${url}</a>`);
+
+                                AppState.knownUsers.forEach(knownUser => {
+                                    if(knownUser.length >= 2) { 
+                                        const safeName = knownUser.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                        const regex = new RegExp(`\\b(${safeName})\\b`, 'gi');
+                                        formattedText = formattedText.replace(regex, (match) => {
+                                            const theme = getUserColor(knownUser);
+                                            return `<span style="color: ${theme.name}; text-shadow: 0 0 8px ${theme.name}, 0 0 16px ${theme.glow}; font-weight: 700;">${match}</span>`;
+                                        });
+                                    }
+                                });
+
+                                if (m.sender === 'Oracle') {
+                                    formattedText = `<span style="font-size: 11.5px; opacity: 0.85; font-style: italic;">${formattedText}</span>`;
+                                }
+
+                                textSpan.innerHTML = formattedText;
+                            }
+
+                            if (!msgDiv.querySelector('.edit-tag')) {
+                                const editTag = document.createElement('span');
+                                editTag.className = 'edit-tag';
+                                editTag.style.cssText = 'font-size: 9px; opacity: 0.5; margin-left: 6px; font-style: italic;';
+                                editTag.textContent = '(edited)';
+                                contentContainer.appendChild(editTag);
+                            }
+                        }
+                    }
+                });
+
+                onChildRemoved(msgsRef, (snap) => {
+                    const msgDiv = document.getElementById(`msg-${snap.key}`);
+                    if (msgDiv) {
+                        msgDiv.remove();
+                    }
                 });
             },
 
             async send() {
                 const val = DOM.input.value.trim();
-                if(!val) return;
 
+                if (AppState.editingMsgId) {
+                    if (!val) {
+                        await remove(ref(db, `rooms/${AppState.room}/msgs/${AppState.editingMsgId}`));
+                        AppState.editingMsgId = null;
+                        DOM.input.value = ''; 
+                        UI.autoResizeInput();
+                        UI.clearReply();
+                        UI.toast("Echo severed.");
+                        return;
+                    }
+                    
+                    try {
+                        const bundle = await CryptoSys.encrypt(val);
+                        await update(ref(db, `rooms/${AppState.room}/msgs/${AppState.editingMsgId}`), {
+                            payload: bundle,
+                            edited: true
+                        });
+                        AppState.editingMsgId = null;
+                        DOM.input.value = ''; 
+                        UI.autoResizeInput();
+                        DOM.input.focus();
+                        UI.clearReply();
+                        UI.toast("Whisper altered.");
+                    } catch(e) { UI.toast("Failed to encrypt edit."); }
+                    return;
+                }
+
+                if(!val) return;
+                
+                // Intercept game commands
+                if (val.startsWith('/')) {
+                    const handled = await GameEngine.processCommand(val);
+                    if (handled) {
+                        DOM.input.value = ''; UI.autoResizeInput(); DOM.input.focus();
+                        return;
+                    }
+                }
+                
                 DOM.input.value = ''; UI.autoResizeInput(); DOM.input.focus();
                 
                 try {
@@ -556,17 +828,13 @@
                 const text = await CryptoSys.decrypt(m.payload);
                 const time = m.ts ? new Date(m.ts).toLocaleTimeString([], {hour12:true, hour:'numeric', minute:'2-digit'}) : 'Now';
                 
-                AppState.knownUsers.add(m.sender);
+                if (m.sender !== 'Oracle') AppState.knownUsers.add(m.sender);
 
-                // Push Notification for "Heyy"
-                if (m.sender !== AppState.user && text.trim().toLowerCase() === 'heyy') {
+                if (m.sender !== AppState.user && m.sender !== 'Oracle' && text.trim().toLowerCase() === 'heyy') {
                     const msgTime = m.ts || Date.now();
-                    // Prevent notifications for old history messages loaded on startup (10 second limit)
                     if (Date.now() - msgTime < 10000) {
                         if ("Notification" in window && Notification.permission === "granted") {
-                            new Notification("Eternal Garden", {
-                                body: `${m.sender} says Heyy!`,
-                            });
+                            new Notification("Eternal Garden", { body: `${m.sender} says Heyy!` });
                         }
                     }
                 }
@@ -574,15 +842,29 @@
                 const div = document.createElement('div');
                 div.className = 'msg-container';
                 div.id = `msg-${m.id}`;
+                div.dataset.rawText = text;
                 
-                const isContinuous = AppState.lastMsgSender === m.sender;
+                const msgTimestamp = m.ts || Date.now(); 
+                const timeDiff = AppState.lastMsgTime ? (msgTimestamp - AppState.lastMsgTime) : 0;
+                const isTimeGap = timeDiff > 300000; 
+                const isContinuous = (AppState.lastMsgSender === m.sender) && !isTimeGap;
+
                 AppState.lastMsgSender = m.sender;
+                AppState.lastMsgTime = msgTimestamp;
 
-                if (!isContinuous) {
-                    div.classList.add('new-sender');
+                if (!isContinuous) { div.classList.add('new-sender'); }
+
+                let userTheme;
+                if (m.sender === 'Oracle') {
+                    userTheme = {
+                        name: '#ffffff',
+                        text: '#ffffff',
+                        border: 'rgba(255, 255, 255, 0.4)',
+                        glow: 'rgba(255, 255, 255, 0.8)'
+                    };
+                } else {
+                    userTheme = getUserColor(m.sender);
                 }
-
-                const userTheme = getUserColor(m.sender);
 
                 let html = '';
                 if(!isContinuous) {
@@ -605,6 +887,11 @@
                     }
                 });
 
+                // Shrink Oracle Text
+                if (m.sender === 'Oracle') {
+                    formattedText = `<span style="font-size: 11.5px; opacity: 0.85; font-style: italic; white-space: pre-wrap;">${formattedText}</span>`;
+                }
+
                 html += `<div class="msg-content" style="color: ${userTheme.text}; text-shadow: 0 0 5px ${userTheme.glow}; padding-left: 12px; margin-left: 4px; border-left: 2px solid ${userTheme.border};">`;
                 
                 if(m.reply) {
@@ -612,12 +899,16 @@
                     const replySender = typeof m.reply === 'object' ? m.reply.sender : m.reply;
                     const replyPreview = replyText.length > 50 ? replyText.substring(0, 50) + '...' : replyText;
                     
-                    html += `<div class="reply-banner">@${replySender}: <span style="opacity: 0.7; font-style: italic;">"${replyPreview}"</span></div><br>`;
+                    html += `<div class="reply-banner"><span style="color: #5d5757d9">@${replySender}:</span> <span style="opacity: 0.7; font-style: italic;color : #564559">"${replyPreview}"</span></div><br>`;
                 }
                 
                 html += `<span>${formattedText}</span>`;
+                
+                if (m.edited) {
+                    html += `<span class="edit-tag" style="font-size: 9px; opacity: 0.5; margin-left: 6px; font-style: italic;">(edited)</span>`;
+                }
 
-                if(text.includes("T or D?") || text.includes("t or d") || text.includes("T or d") || text.includes("T or D")) {
+                if(text.includes("T or D?") || text.includes("t or d") || text.includes("T or d") || text.includes("T or D")|| text.includes("t or d?")) {
                     html += `
                         <div class="td-module">
                             <div class="td-title">The Fates Demand</div>
@@ -632,7 +923,43 @@
                 
                 div.innerHTML = html;
                 
-                div.ondblclick = () => UI.setReply({ sender: m.sender, text: text });
+                if (m.sender !== 'Oracle') {
+                    div.ondblclick = () => UI.setReply({ sender: m.sender, text: text });
+                }
+                
+                // --- LONG PRESS TO EDIT ---
+                let pressTimer;
+                const startPress = (e) => {
+                    if (m.sender !== AppState.user || m.sender === 'Oracle') return; 
+                    pressTimer = setTimeout(() => {
+                        AppState.editingMsgId = m.id;
+                        DOM.input.value = div.dataset.rawText || text;
+                        UI.autoResizeInput();
+                        DOM.input.focus();
+                        UI.toast("Editing...");
+                    }, 600); 
+                };
+                const cancelPress = () => clearTimeout(pressTimer);
+
+                div.addEventListener('mousedown', startPress);
+                div.addEventListener('touchstart', startPress, { passive: true });
+                div.addEventListener('mouseup', cancelPress);
+                div.addEventListener('mouseleave', cancelPress);
+                div.addEventListener('touchend', cancelPress);
+                
+                // --- RIGHT CLICK CONTEXT MENU ---
+                div.addEventListener('contextmenu', (e) => {
+                    if (m.sender !== AppState.user || m.sender === 'Oracle') return;
+                    
+                    e.preventDefault(); 
+                    
+                    AppState.contextMsgId = m.id;
+                    AppState.contextRawText = div.dataset.rawText || text;
+
+                    DOM.ctxMenu.style.left = `${e.clientX}px`;
+                    DOM.ctxMenu.style.top = `${e.clientY}px`;
+                    DOM.ctxMenu.classList.remove('hidden');
+                });
                 
                 DOM.scroller.appendChild(div);
                 if(m.votes) this.updateTDVotes(m.id, m.votes);
@@ -650,7 +977,7 @@
         };
 
         // ==========================================
-        // 5. MEDIA & SYNC ENGINE (YT + WebRTC)
+        // 5. MEDIA & SYNC ENGINE (Decoy & WebRTC)
         // ==========================================
         const MediaEngine = {
             init() {
@@ -658,87 +985,34 @@
                     const data = snap.val();
                     if(!data) return this.close();
                     if(data.sender === AppState.user) return; 
-                    if(data.type === 'yt') this.handleRemoteYTSync(data);
+                    if(data.type === 'decoy') this.handleRemoteDecoySync(data);
                 });
                 this.setupWebRTC();
+
+                // Setup listener for the floating decoy button
+                DOM.floatingRelic.onclick = () => {
+                    GameEngine.addPoints(AppState.user, 50, 'decoy');
+                    DOM.floatingRelic.classList.add('hidden');
+                    
+                    // Tell Firebase the relic was claimed, removing it for everyone
+                    if(AppState.isHost) {
+                        remove(ref(db, `rooms/${AppState.room}/mediaSync`));
+                    }
+                };
             },
 
-            launchYT(url) {
-                const vidId = url.split('v=')[1]?.split('&')[0] || url.split('be/')[1];
-                if(!vidId) return UI.toast("Invalid YT Link");
-
-                document.getElementById('media-layer').style.display = 'flex';
-                document.getElementById('yt-player-container').classList.remove('hidden');
-                document.getElementById('p2p-local-vid').classList.add('hidden');
-                document.getElementById('media-title-display').textContent = "YouTube Stream";
-                
+            launchDecoy() {
+                DOM.floatingRelic.classList.remove('hidden');
                 AppState.isHost = true;
-
-                if(!AppState.ytPlayer) {
-                    AppState.ytPlayer = new YT.Player('yt-player-frame', {
-                        videoId: vidId,
-                        playerVars: { 'autoplay': 1, 'controls': 1 },
-                        events: { 'onStateChange': this.onYTStateChange.bind(this) }
-                    });
-                } else if (typeof AppState.ytPlayer.loadVideoById === 'function') {
-                    AppState.ytPlayer.loadVideoById(vidId);
-                }
-
+                
                 set(ref(db, `rooms/${AppState.room}/mediaSync`), {
-                    type: 'yt', vidId: vidId, sender: AppState.user, state: 1, time: 0, ts: Date.now()
+                    type: 'decoy', sender: AppState.user, ts: Date.now()
                 });
             },
 
-            onYTStateChange(e) {
-                if(!AppState.isHost) return;
-                const state = e.data; 
-                const time = AppState.ytPlayer.getCurrentTime();
-                
-                if(state === 1 || state === 2) {
-                    set(ref(db, `rooms/${AppState.room}/mediaSync`), {
-                        type: 'yt', vidId: AppState.ytPlayer.getVideoData().video_id,
-                        sender: AppState.user, state: state, time: time, ts: Date.now()
-                    });
-                }
-            },
-
-            handleRemoteYTSync(data) {
-                document.getElementById('media-layer').style.display = 'flex';
-                document.getElementById('yt-player-container').classList.remove('hidden');
-                document.getElementById('p2p-local-vid').classList.add('hidden');
-                document.getElementById('media-title-display').textContent = `Host: ${data.sender}`;
-                
+            handleRemoteDecoySync(data) {
+                DOM.floatingRelic.classList.remove('hidden');
                 AppState.isHost = false;
-
-                if(!AppState.ytPlayer) {
-                    AppState.ytPlayer = new YT.Player('yt-player-frame', {
-                        videoId: data.vidId,
-                        playerVars: { 'autoplay': data.state === 1 ? 1 : 0, 'controls': 0 },
-                        events: {
-                            'onReady': (e) => {
-                                if(data.state === 1) e.target.playVideo();
-                                if(data.time > 0) e.target.seekTo(data.time, true);
-                            }
-                        }
-                    });
-                } else if (typeof AppState.ytPlayer.loadVideoById === 'function') {
-                    try {
-                        const vidData = AppState.ytPlayer.getVideoData ? AppState.ytPlayer.getVideoData() : null;
-                        const currentVid = vidData ? vidData.video_id : null;
-                        
-                        if(currentVid !== data.vidId) AppState.ytPlayer.loadVideoById(data.vidId);
-                        
-                        if(data.state === 1) AppState.ytPlayer.playVideo();
-                        if(data.state === 2) AppState.ytPlayer.pauseVideo();
-                        
-                        const currTime = AppState.ytPlayer.getCurrentTime();
-                        if(Math.abs(currTime - data.time) > 2) {
-                            AppState.ytPlayer.seekTo(data.time, true);
-                        }
-                    } catch (err) {
-                        console.warn("YT Sync wait", err);
-                    }
-                }
             },
 
             setupWebRTC() {
@@ -751,7 +1025,6 @@
                         const vid = document.getElementById('p2p-local-vid');
                         document.getElementById('media-layer').style.display = 'flex';
                         vid.classList.remove('hidden');
-                        document.getElementById('yt-player-container').classList.add('hidden');
                         document.getElementById('media-title-display').textContent = "P2P Local Stream";
                         vid.srcObject = stream;
                         vid.play();
@@ -765,7 +1038,6 @@
                 
                 document.getElementById('media-layer').style.display = 'flex';
                 vid.classList.remove('hidden');
-                document.getElementById('yt-player-container').classList.add('hidden');
                 document.getElementById('media-title-display').textContent = `Hosting: ${file.name}`;
                 
                 vid.src = url;
@@ -786,9 +1058,11 @@
 
             close() {
                 document.getElementById('media-layer').style.display = 'none';
-                if(AppState.ytPlayer && typeof AppState.ytPlayer.pauseVideo === 'function') AppState.ytPlayer.pauseVideo();
+                DOM.floatingRelic.classList.add('hidden'); // Hide relic if sync closes
+                
                 const localVid = document.getElementById('p2p-local-vid');
                 localVid.pause(); localVid.src = ''; localVid.srcObject = null;
+                
                 if(AppState.isHost) remove(ref(db, `rooms/${AppState.room}/mediaSync`));
             }
         };
@@ -818,7 +1092,6 @@
                 
                 document.getElementById('auth-gate').style.opacity = '0';
                 
-                // Request Notification Permission on Entry
                 if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
                     Notification.requestPermission();
                 }
@@ -830,10 +1103,11 @@
                     
                     ChatEngine.init();
                     MediaEngine.init();
+                    GameEngine.init(); 
                     UI.toast(`Welcome to the sanctuary, ${u}.`);
                 }, 500);
 
-            } catch(e) { UI.toast("Failed to unlock sanctuary. Check console."); console.error(e); }
+            } catch(e) { UI.toast("Failed to unlock sanctuary."); }
         }
 
         // Global Bindings
@@ -842,6 +1116,34 @@
         DOM.sendBtn.onclick = () => ChatEngine.send();
         DOM.input.onkeydown = (e) => {
             if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ChatEngine.send(); }
+        };
+
+        // Custom Right Click Bindings
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#context-menu')) {
+                DOM.ctxMenu.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('ctx-edit').onclick = () => {
+            DOM.ctxMenu.classList.add('hidden');
+            if(AppState.contextMsgId) {
+                AppState.editingMsgId = AppState.contextMsgId;
+                DOM.input.value = AppState.contextRawText;
+                UI.autoResizeInput();
+                DOM.input.focus();
+                UI.toast("Editing...");
+            }
+        };
+
+        document.getElementById('ctx-delete').onclick = () => {
+            DOM.ctxMenu.classList.add('hidden');
+            if(AppState.contextMsgId) {
+                if(confirm("Erase this echo permanently?")) {
+                    remove(ref(db, `rooms/${AppState.room}/msgs/${AppState.contextMsgId}`));
+                    UI.toast("Echo erased.");
+                }
+            }
         };
 
         // Menu Bindings
@@ -858,9 +1160,8 @@
             sideMenu.style.transform = 'translateX(100%)';
         };
 
-        document.getElementById('opt-host-yt').onclick = () => {
-            const link = prompt("Enter YouTube URL:");
-            if(link) MediaEngine.launchYT(link);
+        document.getElementById('opt-host-relic').onclick = () => {
+            MediaEngine.launchDecoy();
             sideMenu.style.transform = 'translateX(100%)';
         };
 
@@ -877,7 +1178,6 @@
             location.reload();
         };
 
-        // Global functions for inline HTML calls (Truth or Dare)
         window.castTD = (msgId, choice) => {
             set(ref(db, `rooms/${AppState.room}/msgs/${msgId}/votes/${AppState.user}`), choice);
         };
@@ -910,8 +1210,6 @@
         };
         initEnv();
         
-        // Expose YT API hook
-        window.onYouTubeIframeAPIReady = () => { AppState.ytReady = true; };
     </script>
 </body>
 </html>
